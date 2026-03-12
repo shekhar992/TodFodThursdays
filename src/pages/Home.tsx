@@ -14,33 +14,32 @@ interface HomeProps {
 }
 
 function LiveFeed({ announcements, nextEvent }: { announcements: Announcement[]; nextEvent?: Event }) {
-  const recent = announcements.slice(0, 6);
+  const recent = announcements.slice(0, 5);
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-5">
-        <h2
-          className="text-lg font-bold text-[#EEF2F7]"
-          style={{ fontFamily: '"Space Grotesk", sans-serif' }}
-        >
-          Live Feed
-        </h2>
-        <span className="flex items-center gap-1.5 text-xs text-[#38BDF8]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse" />
-          Live
-        </span>
-      </div>
-
+    <div className="space-y-3">
+      {/* Feed card with inline live indicator */}
       <div
         className="rounded-xl overflow-hidden"
         style={{ background: '#131A27', border: '1px solid rgba(255,255,255,0.07)' }}
       >
+        <div
+          className="flex items-center justify-between px-4 py-2.5 border-b"
+          style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+        >
+          <span className="text-[11px] uppercase tracking-[0.10em] font-semibold text-[#4D5A70]">Updates</span>
+          <span className="flex items-center gap-1.5 text-[11px] text-[#38BDF8]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse" />
+            Live
+          </span>
+        </div>
+
         {recent.length === 0 ? (
-          <div className="py-10 flex flex-col items-center gap-2">
+          <div className="py-8 flex flex-col items-center gap-2">
             <span className="text-2xl opacity-20">📡</span>
             <p className="text-xs text-[#4D5A70]">No updates yet</p>
           </div>
         ) : (
-          <ul style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <ul>
             {recent.map((a, idx) => (
               <motion.li
                 key={a.id}
@@ -63,11 +62,11 @@ function LiveFeed({ announcements, nextEvent }: { announcements: Announcement[];
           className="rounded-xl p-4"
           style={{ background: '#131A27', border: '1px solid rgba(255,255,255,0.07)' }}
         >
-          <p className="text-xs uppercase tracking-wider text-[#4D5A70] mb-2 font-medium">Up Next</p>
-          <p className="text-sm font-semibold text-[#EEF2F7] mb-2 leading-tight">{nextEvent.title}</p>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[#4D5A70] mb-2 font-semibold">Up Next</p>
+          <p className="text-sm font-semibold text-[#EEF2F7] mb-1.5 leading-tight">{nextEvent.title}</p>
           <div className="flex items-center gap-1.5">
             <span className="text-xs">📅</span>
-            <span className="text-xs text-[#8896A7]">{nextEvent.date}</span>
+            <span className="text-xs text-[#4D5A70]">{nextEvent.date}</span>
           </div>
         </div>
       )}
@@ -84,24 +83,20 @@ export function Home({ teams, announcements, highlightEvents, upcomingEvents, ac
       transition={{ duration: 0.3 }}
       className="pb-20"
     >
-      {/* Compact arena header */}
+      {/* ── Slim status bar ── removes landing-page hero feel */}
       <div
-        className="px-4 sm:px-6 xl:px-12 pt-7 pb-6 flex items-end justify-between gap-4 border-b"
+        className="px-4 sm:px-6 xl:px-12 h-10 flex items-center justify-between border-b"
         style={{ borderColor: 'rgba(255,255,255,0.05)' }}
       >
-        <div>
-          <p className="text-xs uppercase tracking-widest text-[#4D5A70] mb-1.5 font-medium">
-            Season 2 — Competition
-          </p>
-          <h1
-            className="text-3xl md:text-4xl font-bold text-[#EEF2F7] leading-none"
-            style={{ fontFamily: '"Space Grotesk", sans-serif' }}
-          >
-            TFT2 Arena
-          </h1>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] uppercase tracking-widest text-[#4D5A70] font-medium">
+            Season 2
+          </span>
+          <span className="text-[#4D5A70] select-none" aria-hidden>·</span>
+          <span className="text-xs text-[#4D5A70]">{teams.length} teams</span>
         </div>
         <div
-          className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
           style={{
             background: 'rgba(56,189,248,0.08)',
             border: '1px solid rgba(56,189,248,0.20)',
@@ -113,35 +108,60 @@ export function Home({ teams, announcements, highlightEvents, upcomingEvents, ac
         </div>
       </div>
 
-      {/* Dashboard grid */}
-      <div className="px-4 sm:px-6 xl:px-12 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr_280px] gap-6">
-          {/* Left: Leaderboard */}
-          <div className="order-2 lg:order-1">
+      {/* ── Main dashboard workspace ── */}
+      <div className="px-4 sm:px-6 xl:px-12 mt-5">
+
+        {/* Zone column labels — orient user instantly on desktop */}
+        <div className="hidden lg:grid lg:grid-cols-[360px_1fr_260px] mb-3">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#4D5A70] font-semibold">Rankings</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#4D5A70] font-semibold pl-6">Active Challenge</p>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#4D5A70] font-semibold pl-6">Updates</p>
+        </div>
+
+        {/* Three-column workspace — border dividers instead of gap-cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr_260px]">
+
+          {/* ── Left: PRIMARY — Rankings ── leaderboard is the anchor */}
+          {/* order-1 on mobile: leaderboard appears first */}
+          <div
+            className="order-1 pb-6 lg:pb-0 lg:pr-6 border-b lg:border-b-0 lg:border-r"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          >
             <Leaderboard teams={teams} />
           </div>
 
-          {/* Center: Puzzle Arena */}
-          <div className="order-1 lg:order-2">
+          {/* ── Center: SECONDARY — Active Challenge ── */}
+          <div
+            className="order-2 py-6 lg:py-0 lg:px-6 border-b lg:border-b-0"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          >
             <PuzzleArena key={activePuzzle.id} puzzle={activePuzzle} />
           </div>
 
-          {/* Right: Live Feed */}
-          <div className="order-3 lg:order-3">
+          {/* ── Right: TERTIARY — Updates ── compact support rail */}
+          <div
+            className="order-3 pt-6 lg:pt-0 lg:pl-6 lg:border-l"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          >
             <LiveFeed announcements={announcements} nextEvent={upcomingEvents[0]} />
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Secondary content band ── visually demoted below full-width divider */}
+      <div
+        className="mt-14 border-t"
+        style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+      >
+        <div className="px-4 sm:px-6 xl:px-12 pt-8">
+          <EventHighlights events={highlightEvents} />
+          <div className="mt-8">
+            <UpcomingEvents events={upcomingEvents} />
           </div>
         </div>
       </div>
 
-      {/* Event Highlights */}
-      <div className="px-4 sm:px-6 xl:px-12 mt-10">
-        <EventHighlights events={highlightEvents} />
-      </div>
-
-      {/* Upcoming Schedule */}
-      <div className="px-4 sm:px-6 xl:px-12 mt-10">
-        <UpcomingEvents events={upcomingEvents} />
-      </div>
     </motion.div>
   );
 }

@@ -18,7 +18,7 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
       whileHover={{ y: -4, scale: 1.02 }}
       className="group relative flex-shrink-0 w-72 rounded-xl overflow-hidden cursor-default"
       style={{
-        background: 'rgba(20, 12, 70, 0.6)',
+        background: '#131A27',
         border: `1px solid ${accentColor}22`,
         boxShadow: `0 0 0 0 ${accentColor}00`,
         transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
@@ -40,7 +40,7 @@ export function EventCard({ event, index = 0 }: EventCardProps) {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a0d55] via-[#1a0d5522] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#131A27] via-[#131A2722] to-transparent" />
 
         {/* Category badge */}
         <div

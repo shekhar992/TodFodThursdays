@@ -19,19 +19,21 @@ export function EventHighlights({ events }: EventHighlightsProps) {
     <section>
       <div className="flex items-center gap-3 mb-6">
         <span className="text-2xl">🎬</span>
-        <h2 className="text-2xl font-bold text-white font-[Orbitron]">Event Highlights</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-[#FF2E8844] to-transparent" />
+        <h2 className="text-xl font-bold text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Event Highlights</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-[rgba(56,189,248,0.20)] to-transparent" />
         {events.length > 0 && (
           <div className="flex gap-2">
             <button
               onClick={() => scroll('left')}
-              className="w-9 h-9 rounded-full glass border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-[#00E5FF44] transition-all duration-200 cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-all duration-200 cursor-pointer"
+              style={{ background: '#1A2234', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               ←
             </button>
             <button
               onClick={() => scroll('right')}
-              className="w-9 h-9 rounded-full glass border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:border-[#00E5FF44] transition-all duration-200 cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-all duration-200 cursor-pointer"
+              style={{ background: '#1A2234', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               →
             </button>
@@ -47,7 +49,7 @@ export function EventHighlights({ events }: EventHighlightsProps) {
         {events.length === 0 ? (
           <div
             className="flex-1 flex flex-col items-center justify-center gap-4 py-16 rounded-xl border border-dashed border-white/10"
-            style={{ background: 'rgba(15, 15, 26, 0.5)', minHeight: '200px' }}
+            style={{ background: '#131A27', minHeight: '200px' }}
           >
             <span className="text-4xl opacity-30">🎬</span>
             <div className="text-center">
@@ -64,11 +66,11 @@ export function EventHighlights({ events }: EventHighlightsProps) {
             {/* "View all" card */}
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="flex-shrink-0 w-48 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-3 cursor-pointer group transition-all duration-300 hover:border-[#7A5CFF44]"
+              className="flex-shrink-0 w-48 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-3 cursor-pointer group transition-all duration-300 hover:border-[rgba(56,189,248,0.25)]"
               style={{ minHeight: '240px' }}
             >
               <span className="text-3xl opacity-30 group-hover:opacity-60 transition-opacity duration-300">+</span>
-              <span className="text-xs text-white/30 group-hover:text-[#7A5CFF] transition-colors duration-300 font-medium">
+                <span className="text-xs text-white/30 group-hover:text-[#38BDF8] transition-colors duration-300 font-medium">
                 View All Events
               </span>
             </motion.div>

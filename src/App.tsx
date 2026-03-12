@@ -40,12 +40,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen scanline-overlay noise-texture animated-gradient">
-      {/* Admin mode top bar */}
+    <div className="min-h-screen" style={{ background: '#0D1117' }}>
+      {/* Admin mode top indicator */}
       {role === 'admin' && (
         <div
           className="fixed top-0 left-0 right-0 z-50 h-0.5"
-          style={{ background: 'linear-gradient(90deg, #FF2E88, #7A5CFF, #FF2E88)' }}
+          style={{ background: 'linear-gradient(90deg, transparent, #F59E0B, #F59E0B, transparent)' }}
         />
       )}
 
@@ -54,55 +54,61 @@ function App() {
 
       {/* Header / Nav */}
       <header
-        className="sticky top-0 z-40 h-16"
+        className="sticky top-0 z-40 h-14"
         style={{
           background: role === 'admin'
-            ? 'rgba(45, 18, 65, 0.94)'
-            : 'rgba(35, 22, 110, 0.90)',
+            ? 'rgba(13, 17, 23, 0.95)'
+            : 'rgba(13, 17, 23, 0.92)',
           backdropFilter: 'blur(20px) saturate(180%)',
           borderBottom: role === 'admin'
-            ? '1px solid rgba(255, 46, 136, 0.2)'
-            : '1px solid rgba(255, 255, 255, 0.08)',
+            ? '1px solid rgba(245, 158, 11, 0.18)'
+            : '1px solid rgba(255, 255, 255, 0.06)',
         }}
       >
         <div className="max-w-screen-xl mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-black"
               style={{
-                background: 'linear-gradient(135deg, #7A5CFF, #00E5FF)',
-                boxShadow: '0 0 15px #7A5CFF44',
+                background: 'rgba(56,189,248,0.15)',
+                border: '1px solid rgba(56,189,248,0.3)',
+                color: '#38BDF8',
               }}
             >
               ⚡
             </div>
             <span
-              className="text-base font-black tracking-tight hidden sm:block"
-              style={{
-                fontFamily: 'Orbitron, sans-serif',
-                background: 'linear-gradient(135deg, #00E5FF, #7A5CFF)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
+              className="text-sm font-bold tracking-tight hidden sm:block text-[#EEF2F7]"
+              style={{ fontFamily: '"Space Grotesk", sans-serif' }}
             >
-              TFT2 ARENA
+              TFT2 Arena
             </span>
+            {role === 'admin' && (
+              <span
+                className="text-xs px-2 py-0.5 rounded font-semibold"
+                style={{
+                  background: 'rgba(245,158,11,0.12)',
+                  border: '1px solid rgba(245,158,11,0.25)',
+                  color: '#F59E0B',
+                }}
+              >
+                Admin
+              </span>
+            )}
           </div>
 
           {/* Nav links */}
           <nav className="hidden md:flex items-center gap-6">
             {[
-              { label: 'Home', active: role === 'player' },
-              { label: 'Leaderboard' },
+              { label: 'Dashboard', active: role === 'player' },
               { label: 'Events' },
               { label: 'Puzzles' },
             ].map((link) => (
               <button
                 key={link.label}
-                className="text-sm font-medium cursor-pointer transition-colors duration-200"
-                style={{ color: link.active ? '#00E5FF' : 'rgba(255,255,255,0.4)' }}
+                className="text-xs font-medium cursor-pointer transition-colors duration-200 uppercase tracking-wider"
+                style={{ color: link.active ? '#38BDF8' : 'rgba(238,242,247,0.3)' }}
               >
                 {link.label}
               </button>
@@ -130,16 +136,16 @@ function App() {
               <div
                 className="mb-8 flex items-center gap-3 px-5 py-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255,46,136,0.1), rgba(122,92,255,0.1))',
-                  border: '1px solid rgba(255,46,136,0.25)',
-                  color: '#FF2E88',
+                  background: 'rgba(245,158,11,0.08)',
+                  border: '1px solid rgba(245,158,11,0.20)',
+                  color: '#F59E0B',
                 }}
               >
                 <span
                   className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
-                  style={{ backgroundColor: '#FF2E88' }}
+                  style={{ backgroundColor: '#F59E0B' }}
                 />
-                Admin Mode Active — Changes update the player view in real time
+                Admin Mode — Changes update the player view in real time
               </div>
               <AdminDashboard
                 teams={teams}
@@ -158,6 +164,7 @@ function App() {
             <Home
               key="home"
               teams={teams}
+              announcements={announcements}
               highlightEvents={highlightEvents}
               upcomingEvents={upcomingEvents}
               activePuzzle={activePuzzle}
@@ -173,23 +180,24 @@ function App() {
       >
         <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <span
-            className="text-sm font-bold tracking-wider"
-            style={{ fontFamily: 'Orbitron, sans-serif', color: 'rgba(255,255,255,0.15)' }}
+            className="text-sm font-semibold"
+            style={{ fontFamily: '"Space Grotesk", sans-serif', color: 'rgba(238,242,247,0.15)' }}
           >
-            TFT2 ARENA
+            TFT2 Arena
           </span>
-          <span className="text-xs text-white/20">
+          <span className="text-xs" style={{ color: 'rgba(238,242,247,0.15)' }}>
             Season 2 · Deloitte Studio Competition · {new Date().getFullYear()}
           </span>
-          <div className="flex items-center gap-4">
-            {['#00E5FF', '#7A5CFF', '#FF2E88', '#00FFC6'].map((c) => (
-              <div
-                key={c}
-                className="w-2 h-2 rounded-full opacity-40"
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
+          <span
+            className="text-xs px-2 py-0.5 rounded"
+            style={{
+              background: 'rgba(56,189,248,0.08)',
+              border: '1px solid rgba(56,189,248,0.15)',
+              color: 'rgba(56,189,248,0.5)',
+            }}
+          >
+            Live
+          </span>
         </div>
       </footer>
     </div>

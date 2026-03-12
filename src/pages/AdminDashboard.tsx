@@ -138,10 +138,10 @@ export function AdminDashboard({
 
   const inputCls = 'cyber-input w-full px-4 py-3 rounded-xl text-sm';
   const labelCls = 'block text-xs uppercase tracking-wider text-white/40 mb-1.5 font-medium';
-  const errorCls = 'text-xs text-[#FF2E88] mt-1.5 flex items-center gap-1';
+  const errorCls = 'text-xs text-[#F87171] mt-1.5 flex items-center gap-1';
 
   const errorInput = (base: string) =>
-    `${base} border-[#FF2E88] focus:border-[#FF2E88]`;
+    `${base} border-[#F87171] focus:border-[#F87171]`;
 
   return (
     <div className="space-y-8">
@@ -149,12 +149,12 @@ export function AdminDashboard({
       <div className="flex items-center gap-4">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-          style={{ background: 'linear-gradient(135deg, #FF2E8822, #7A5CFF22)', border: '1px solid #FF2E8844' }}
+          style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.25)' }}
         >
           🔑
         </div>
         <div>
-          <h1 className="text-2xl font-black text-white font-[Orbitron]">Admin Control Room</h1>
+          <h1 className="text-2xl font-black text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Admin Control Room</h1>
           <p className="text-sm text-white/40 mt-0.5">Manage events, puzzles, scores, and announcements</p>
         </div>
       </div>
@@ -162,16 +162,16 @@ export function AdminDashboard({
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Teams', value: teams.length, icon: '🛡️', color: '#00E5FF' },
-          { label: 'Upcoming Events', value: upcomingEvents.length, icon: '🗓️', color: '#7A5CFF' },
-          { label: 'Active Puzzle', value: activePuzzle.points, icon: '🧩', color: '#00FFC6' },
-          { label: 'Announcements', value: announcements.length, icon: '📢', color: '#FF2E88' },
+          { label: 'Teams', value: teams.length, icon: '🛡️', color: '#38BDF8' },
+          { label: 'Upcoming Events', value: upcomingEvents.length, icon: '🗓️', color: '#94A3B8' },
+          { label: 'Active Puzzle', value: activePuzzle.points, icon: '🧩', color: '#34D399' },
+          { label: 'Announcements', value: announcements.length, icon: '📢', color: '#F59E0B' },
         ].map((stat) => (
           <div
             key={stat.label}
             className="rounded-xl p-4"
             style={{
-              background: 'rgba(20, 12, 70, 0.5)',
+              background: '#131A27',
               border: `1px solid ${stat.color}22`,
             }}
           >
@@ -180,8 +180,8 @@ export function AdminDashboard({
               <span className="text-xs text-white/40 uppercase tracking-wider">{stat.label}</span>
             </div>
             <div
-              className="text-2xl font-black font-[Orbitron]"
-              style={{ color: stat.color, textShadow: `0 0 15px ${stat.color}66` }}
+              className="text-2xl font-black"
+              style={{ color: stat.color, fontFamily: '"Space Grotesk", sans-serif' }}
             >
               {stat.value}
             </div>
@@ -195,11 +195,11 @@ export function AdminDashboard({
         <NeonCard variant="blue" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🗓️</span>
-            <h3 className="font-bold text-white font-[Orbitron] text-sm uppercase tracking-wider">Add Event</h3>
+            <h3 className="font-bold text-white text-sm uppercase tracking-wider" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Add Event</h3>
           </div>
           <form onSubmit={handleAddEvent} className="space-y-3">
             <div>
-              <label className={labelCls}>Event Title <span className="text-[#FF2E88]">*</span></label>
+              <label className={labelCls}>Event Title <span className="text-[#F87171]">*</span></label>
               <input
                 className={eventSubmitted && !eventForm.title.trim() ? errorInput(inputCls) : inputCls}
                 placeholder="e.g. Decathlon Sprint"
@@ -240,7 +240,7 @@ export function AdminDashboard({
                 onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
-            <AdminButton color="#00E5FF">Add to Schedule →</AdminButton>
+            <AdminButton color="#38BDF8">Add to Schedule →</AdminButton>
           </form>
         </NeonCard>
 
@@ -248,11 +248,11 @@ export function AdminDashboard({
         <NeonCard variant="pink" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">📢</span>
-            <h3 className="font-bold text-white font-[Orbitron] text-sm uppercase tracking-wider">Post Announcement</h3>
+            <h3 className="font-bold text-white text-sm uppercase tracking-wider" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Post Announcement</h3>
           </div>
           <form onSubmit={handlePostAnnouncement} className="space-y-3">
             <div>
-              <label className={labelCls}>Announcement Text <span className="text-[#FF2E88]">*</span></label>
+              <label className={labelCls}>Announcement Text <span className="text-[#F87171]">*</span></label>
               <textarea
                 className={`${announcementSubmitted && !announcement.trim() ? errorInput(inputCls) : inputCls} resize-none`}
                 rows={4}
@@ -264,11 +264,11 @@ export function AdminDashboard({
                 <p className={errorCls}><span>⚠</span> Announcement text is required</p>
               )}
             </div>
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF2E8811] border border-[#FF2E8822]">
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(56,189,248,0.06)] border border-[rgba(56,189,248,0.15)]">
               <span className="text-xs">💡</span>
               <span className="text-xs text-white/40">Announcement will appear immediately in the ticker</span>
             </div>
-            <AdminButton color="#FF2E88">Post Now →</AdminButton>
+            <AdminButton color="#F59E0B">Post Now →</AdminButton>
           </form>
         </NeonCard>
 
@@ -276,11 +276,11 @@ export function AdminDashboard({
         <NeonCard variant="purple" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🧩</span>
-            <h3 className="font-bold text-white font-[Orbitron] text-sm uppercase tracking-wider">Launch Puzzle</h3>
+            <h3 className="font-bold text-white text-sm uppercase tracking-wider" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Launch Puzzle</h3>
           </div>
           <form onSubmit={handleLaunchPuzzle} className="space-y-3">
             <div>
-              <label className={labelCls}>Puzzle Question <span className="text-[#FF2E88]">*</span></label>
+              <label className={labelCls}>Puzzle Question <span className="text-[#F87171]">*</span></label>
               <textarea
                 className={`${puzzleSubmitted && !puzzleForm.question.trim() ? errorInput(inputCls) : inputCls} resize-none`}
                 rows={3}
@@ -294,7 +294,7 @@ export function AdminDashboard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Answer <span className="text-[#FF2E88]">*</span></label>
+                <label className={labelCls}>Answer <span className="text-[#F87171]">*</span></label>
                 <input
                   className={puzzleSubmitted && !puzzleForm.answer.trim() ? errorInput(inputCls) : inputCls}
                   placeholder="Correct answer"
@@ -318,7 +318,7 @@ export function AdminDashboard({
                 />
               </div>
             </div>
-            <AdminButton color="#7A5CFF">Launch Puzzle →</AdminButton>
+            <AdminButton color="#38BDF8">Launch Puzzle →</AdminButton>
           </form>
         </NeonCard>
 
@@ -326,11 +326,11 @@ export function AdminDashboard({
         <NeonCard variant="green" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">⚡</span>
-            <h3 className="font-bold text-white font-[Orbitron] text-sm uppercase tracking-wider">Update Team Score</h3>
+            <h3 className="font-bold text-white text-sm uppercase tracking-wider" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Update Team Score</h3>
           </div>
           <form onSubmit={handleUpdateScore} className="space-y-3">
             <div>
-              <label className={labelCls}>Select Team <span className="text-[#FF2E88]">*</span></label>
+              <label className={labelCls}>Select Team <span className="text-[#F87171]">*</span></label>
               <select
                 className={`${scoreSubmitted && !scoreForm.teamId ? errorInput(inputCls) : inputCls} appearance-none`}
                 value={scoreForm.teamId}
@@ -348,7 +348,7 @@ export function AdminDashboard({
               )}
             </div>
             <div>
-              <label className={labelCls}>Points Delta (+ to add, - to subtract) <span className="text-[#FF2E88]">*</span></label>
+              <label className={labelCls}>Points Delta (+ to add, - to subtract) <span className="text-[#F87171]">*</span></label>
               <input
                 type="number"
                 className={scoreSubmitted && !scoreForm.points ? errorInput(inputCls) : inputCls}
@@ -365,10 +365,10 @@ export function AdminDashboard({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#00FFC611] border border-[#00FFC622]"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(52,211,153,0.08)] border border-[rgba(52,211,153,0.20)]"
               >
                 <span className="text-xs text-white/40">Preview:</span>
-                <span className="text-xs font-bold text-[#00FFC6]">
+                <span className="text-xs font-bold text-[#34D399]">
                   {teams.find((t) => t.id === scoreForm.teamId)?.score ?? 0} →{' '}
                   {Math.max(
                     0,
@@ -379,13 +379,13 @@ export function AdminDashboard({
                 </span>
               </motion.div>
             )}
-            <AdminButton color="#00FFC6">Update Score →</AdminButton>
+            <AdminButton color="#34D399">Update Score →</AdminButton>
           </form>
         </NeonCard>
       </div>
 
       {/* Divider */}
-      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(122,92,255,0.3), transparent)' }} />
+      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(56,189,248,0.2), transparent)' }} />
 
       {/* Event Manager */}
       <EventManager events={managedEvents} onEventsUpdate={onManagedEventsUpdate} />
@@ -402,9 +402,9 @@ export function AdminDashboard({
               transition={{ type: 'spring', bounce: 0.3, duration: 0.4 }}
               className="px-5 py-3.5 rounded-xl text-sm font-medium text-white max-w-sm pointer-events-auto"
               style={{
-                background: 'rgba(20, 12, 70, 0.97)',
-                border: '1px solid #00FFC644',
-                boxShadow: '0 8px 32px #00000066, 0 0 20px #00FFC622',
+                background: 'rgba(13,17,23,0.95)',
+                border: '1px solid rgba(56,189,248,0.25)',
+                boxShadow: '0 8px 32px #00000066, 0 0 20px rgba(56,189,248,0.08)',
                 backdropFilter: 'blur(20px)',
               }}
             >

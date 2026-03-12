@@ -11,25 +11,37 @@ interface NeonCardProps {
   style?: CSSProperties;
 }
 
-const variantStyles: Record<NeonVariant, string> = {
-  blue: 'border-[#00E5FF33] hover:border-[#00E5FF88] hover:shadow-[0_0_30px_#00E5FF22,0_0_60px_#00E5FF0A]',
-  purple: 'border-[#7A5CFF33] hover:border-[#7A5CFF88] hover:shadow-[0_0_30px_#7A5CFF22,0_0_60px_#7A5CFF0A]',
-  pink: 'border-[#FF2E8833] hover:border-[#FF2E8888] hover:shadow-[0_0_30px_#FF2E8822,0_0_60px_#FF2E880A]',
-  green: 'border-[#00FFC633] hover:border-[#00FFC688] hover:shadow-[0_0_30px_#00FFC622,0_0_60px_#00FFC60A]',
+const variantBorder: Record<NeonVariant, string> = {
+  blue:   'rgba(56, 189, 248, 0.20)',
+  purple: 'rgba(99, 102, 241, 0.20)',
+  pink:   'rgba(245, 158, 11, 0.20)',
+  green:  'rgba(52, 211, 153, 0.20)',
+};
+
+const variantHoverBorder: Record<NeonVariant, string> = {
+  blue:   'rgba(56, 189, 248, 0.40)',
+  purple: 'rgba(99, 102, 241, 0.40)',
+  pink:   'rgba(245, 158, 11, 0.40)',
+  green:  'rgba(52, 211, 153, 0.40)',
 };
 
 export function NeonCard({ children, variant = 'purple', hover = true, className = '', style }: NeonCardProps) {
   return (
     <motion.div
-      whileHover={hover ? { y: -2, scale: 1.005 } : undefined}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className={`
-        glass rounded-xl border p-6
-        transition-all duration-300
-        ${variantStyles[variant]}
-        ${className}
-      `}
-      style={style}
+      whileHover={hover ? { y: -2 } : undefined}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+      className={`rounded-xl p-6 transition-all duration-200 ${className}`}
+      style={{
+        background: '#131A27',
+        border: `1px solid ${variantBorder[variant]}`,
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        if (hover) (e.currentTarget as HTMLDivElement).style.borderColor = variantHoverBorder[variant];
+      }}
+      onMouseLeave={(e) => {
+        if (hover) (e.currentTarget as HTMLDivElement).style.borderColor = variantBorder[variant];
+      }}
     >
       {children}
     </motion.div>

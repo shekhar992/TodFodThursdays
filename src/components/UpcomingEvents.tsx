@@ -11,8 +11,8 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
     <section>
       <div className="flex items-center gap-3 mb-6">
         <span className="text-2xl">🗓️</span>
-        <h2 className="text-2xl font-bold text-white font-[Orbitron]">Upcoming Events</h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-[#00FFC644] to-transparent" />
+        <h2 className="text-xl font-bold text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Upcoming Events</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-[rgba(56,189,248,0.20)] to-transparent" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -21,7 +21,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="col-span-full flex flex-col items-center justify-center gap-4 py-16 rounded-xl border border-dashed border-white/10"
-            style={{ background: 'rgba(20, 12, 70, 0.4)' }}
+            style={{ background: '#131A27' }}
           >
             <span className="text-4xl opacity-30">🗓️</span>
             <div className="text-center">
@@ -41,7 +41,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
                 whileHover={{ y: -3 }}
                 className="group relative rounded-xl overflow-hidden cursor-default"
                 style={{
-                  background: 'rgba(20, 12, 70, 0.6)',
+                  background: '#131A27',
                   border: `1px solid ${accentColor}22`,
                 }}
                 onMouseEnter={(e) => {
@@ -60,7 +60,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
                     alt={event.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a0d55] via-[#1a0d5555] to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131A27] via-[#131A2755] to-transparent" />
 
                   {/* Upcoming badge */}
                   <div

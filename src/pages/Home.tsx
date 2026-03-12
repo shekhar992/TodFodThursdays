@@ -3,189 +3,147 @@ import { Leaderboard } from '../components/Leaderboard';
 import { PuzzleArena } from '../components/PuzzleArena';
 import { EventHighlights } from '../components/EventHighlights';
 import { UpcomingEvents } from '../components/UpcomingEvents';
-import type { Team, Event, Puzzle } from '../data/mockData';
-
-const pageVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0 },
-};
+import type { Team, Announcement, Event, Puzzle } from '../data/mockData';
 
 interface HomeProps {
   teams: Team[];
+  announcements: Announcement[];
   highlightEvents: Event[];
   upcomingEvents: Event[];
   activePuzzle: Puzzle;
 }
 
-export function Home({ teams, highlightEvents, upcomingEvents, activePuzzle }: HomeProps) {
+function LiveFeed({ announcements, nextEvent }: { announcements: Announcement[]; nextEvent?: Event }) {
+  const recent = announcements.slice(0, 6);
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-5">
+        <h2
+          className="text-lg font-bold text-[#EEF2F7]"
+          style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+        >
+          Live Feed
+        </h2>
+        <span className="flex items-center gap-1.5 text-xs text-[#38BDF8]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse" />
+          Live
+        </span>
+      </div>
+
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: '#131A27', border: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        {recent.length === 0 ? (
+          <div className="py-10 flex flex-col items-center gap-2">
+            <span className="text-2xl opacity-20">📡</span>
+            <p className="text-xs text-[#4D5A70]">No updates yet</p>
+          </div>
+        ) : (
+          <ul style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            {recent.map((a, idx) => (
+              <motion.li
+                key={a.id}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="flex items-start gap-3 px-4 py-3 border-b last:border-b-0"
+                style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <span className="text-sm mt-0.5 flex-shrink-0">{a.emoji}</span>
+                <span className="text-xs text-[#8896A7] leading-relaxed">{a.text}</span>
+              </motion.li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {nextEvent && (
+        <div
+          className="rounded-xl p-4"
+          style={{ background: '#131A27', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <p className="text-xs uppercase tracking-wider text-[#4D5A70] mb-2 font-medium">Up Next</p>
+          <p className="text-sm font-semibold text-[#EEF2F7] mb-2 leading-tight">{nextEvent.title}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">📅</span>
+            <span className="text-xs text-[#8896A7]">{nextEvent.date}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Home({ teams, announcements, highlightEvents, upcomingEvents, activePuzzle }: HomeProps) {
   return (
     <motion.div
-      key="home"
-      initial="hidden"
-      animate="visible"
-      variants={pageVariants}
-      transition={{ duration: 0.5 }}
-      className="space-y-24"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="pb-20"
     >
-      {/* Hero Section */}
-      <section className="relative min-h-[70vh] flex flex-col items-center justify-center text-center overflow-hidden">
-        {/* Animated background glows */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-10"
-            style={{ background: '#7A5CFF' }}
-            animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08] }}
-            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <motion.div
-            className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-10"
-            style={{ background: '#00E5FF' }}
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.05, 0.1] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-          />
-          <motion.div
-            className="absolute bottom-1/4 left-1/2 w-64 h-64 rounded-full blur-3xl opacity-8"
-            style={{ background: '#FF2E88' }}
-            animate={{ scale: [1, 1.3, 1], opacity: [0.06, 0.12, 0.06] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          />
+      {/* Compact arena header */}
+      <div
+        className="px-4 sm:px-6 xl:px-12 pt-7 pb-6 flex items-end justify-between gap-4 border-b"
+        style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+      >
+        <div>
+          <p className="text-xs uppercase tracking-widest text-[#4D5A70] mb-1.5 font-medium">
+            Season 2 — Competition
+          </p>
+          <h1
+            className="text-3xl md:text-4xl font-bold text-[#EEF2F7] leading-none"
+            style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+          >
+            TFT2 Arena
+          </h1>
         </div>
-
-        {/* Grid lines */}
         <div
-          className="absolute inset-0 opacity-[0.025] pointer-events-none"
+          className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
           style={{
-            backgroundImage:
-              'linear-gradient(rgba(122,92,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(122,92,255,1) 1px, transparent 1px)',
-            backgroundSize: '80px 80px',
-          }}
-        />
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative z-10 mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest"
-          style={{
-            background: 'rgba(122, 92, 255, 0.15)',
-            border: '1px solid rgba(122, 92, 255, 0.4)',
-            color: '#7A5CFF',
+            background: 'rgba(56,189,248,0.08)',
+            border: '1px solid rgba(56,189,248,0.20)',
+            color: '#38BDF8',
           }}
         >
-          <span
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ backgroundColor: '#7A5CFF' }}
-          />
-          Season 2 · Now Live
-        </motion.div>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse" />
+          Live
+        </div>
+      </div>
 
-        {/* Main title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="relative z-10 text-6xl md:text-8xl lg:text-9xl font-black leading-none tracking-tighter mb-4"
-          style={{ fontFamily: 'Orbitron, sans-serif' }}
-        >
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #00E5FF 0%, #7A5CFF 50%, #FF2E88 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 30px rgba(0, 229, 255, 0.3))',
-            }}
-          >
-            TFT2
-          </span>
-          <br />
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #7A5CFF 0%, #FF2E88 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            ARENA
-          </span>
-        </motion.h1>
+      {/* Dashboard grid */}
+      <div className="px-4 sm:px-6 xl:px-12 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr_280px] gap-6">
+          {/* Left: Leaderboard */}
+          <div className="order-2 lg:order-1">
+            <Leaderboard teams={teams} />
+          </div>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="relative z-10 text-lg md:text-xl text-white/50 font-light tracking-widest uppercase mb-10"
-        >
-          The Ultimate Studio Challenge
-        </motion.p>
+          {/* Center: Puzzle Arena */}
+          <div className="order-1 lg:order-2">
+            <PuzzleArena key={activePuzzle.id} puzzle={activePuzzle} />
+          </div>
 
-        {/* CTA buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65 }}
-          className="relative z-10 flex flex-wrap gap-4 justify-center"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="btn-neon px-8 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider text-white cursor-pointer"
-            style={{
-              background: 'linear-gradient(135deg, #7A5CFF, #00E5FF)',
-              boxShadow: '0 0 30px #7A5CFF44',
-            }}
-          >
-            View Leaderboard ↓
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => document.getElementById('puzzle-arena')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="btn-neon px-8 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider cursor-pointer"
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(0, 229, 255, 0.3)',
-              color: '#00E5FF',
-            }}
-          >
-            Try Puzzle →
-          </motion.button>
-        </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="w-px h-8 bg-gradient-to-b from-transparent to-white/20" />
-          <div className="w-1 h-1 rounded-full bg-white/20" />
-        </motion.div>
-      </section>
-
-      {/* Leaderboard */}
-      <section id="leaderboard" className="max-w-2xl mx-auto px-4 sm:px-6 w-full scroll-mt-20">
-        <Leaderboard teams={teams} />
-      </section>
-
-      {/* Puzzle Arena */}
-      <section id="puzzle-arena" className="max-w-3xl mx-auto px-4 sm:px-6 w-full scroll-mt-20">
-        <PuzzleArena key={activePuzzle.id} puzzle={activePuzzle} />
-      </section>
+          {/* Right: Live Feed */}
+          <div className="order-3 lg:order-3">
+            <LiveFeed announcements={announcements} nextEvent={upcomingEvents[0]} />
+          </div>
+        </div>
+      </div>
 
       {/* Event Highlights */}
-      <section id="event-highlights" className="px-4 sm:px-6 xl:px-12 scroll-mt-20">
+      <div className="px-4 sm:px-6 xl:px-12 mt-10">
         <EventHighlights events={highlightEvents} />
-      </section>
+      </div>
 
-      {/* Upcoming Events */}
-      <section id="upcoming-events" className="px-4 sm:px-6 xl:px-12 scroll-mt-20">
+      {/* Upcoming Schedule */}
+      <div className="px-4 sm:px-6 xl:px-12 mt-10">
         <UpcomingEvents events={upcomingEvents} />
-      </section>
+      </div>
     </motion.div>
   );
 }
+
+

@@ -18,104 +18,111 @@ function AnimatedScore({ target }: { target: number }) {
   return <span>{display}</span>;
 }
 
-const rankMedals = ['🥇', '🥈', '🥉'];
-
 interface LeaderboardProps {
   teams?: Team[];
 }
 
 export function Leaderboard({ teams = mockTeams }: LeaderboardProps) {
   const sorted = [...teams].sort((a, b) => b.score - a.score);
-  const maxScore = sorted[0]?.score ?? 1;
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-2xl">🏆</span>
-        <h2 className="text-2xl font-bold text-white font-[Orbitron]">
+    <section>
+      <div className="flex items-center justify-between mb-5">
+        <h2
+          className="text-lg font-bold text-[#EEF2F7]"
+          style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+        >
           Leaderboard
         </h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-[#FFD70044] to-transparent" />
-        <span className="text-xs text-white/40 uppercase tracking-widest">Season 2</span>
+        <span className="text-xs text-[#4D5A70] uppercase tracking-widest font-medium">Season 2</span>
       </div>
 
-      <div className="space-y-3">
-        {sorted.map((team, idx) => (
-          <motion.div
-            key={team.id}
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: idx * 0.08, ease: 'easeOut' }}
-          >
-            <div
-              className="relative overflow-hidden rounded-xl border transition-all duration-300 cursor-default group"
-              style={{
-                borderColor: `${team.color}22`,
-                background: `rgba(20, 12, 70, 0.5)`,
-              }}
+      {sorted.length === 0 ? (
+        <div
+          className="py-10 text-center rounded-xl"
+          style={{ background: '#131A27', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <p className="text-[#4D5A70] text-sm">No teams yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sorted.map((team, idx) => (
+            <motion.div
+              key={team.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, delay: idx * 0.07, ease: 'easeOut' }}
             >
-              {/* Hover glow */}
-              <motion.div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              <div
+                className="group flex items-center gap-4 px-4 py-3.5 rounded-xl transition-colors duration-200 cursor-default"
                 style={{
-                  background: `radial-gradient(ellipse at left, ${team.color}0A 0%, transparent 70%)`,
+                  background: '#131A27',
+                  border: idx === 0
+                    ? '1px solid rgba(248,192,59,0.20)'
+                    : '1px solid rgba(255,255,255,0.06)',
                 }}
-              />
-
-              {/* Score progress bar */}
-              <motion.div
-                className="absolute bottom-0 left-0 h-0.5"
-                initial={{ width: 0 }}
-                animate={{ width: `${(team.score / maxScore) * 100}%` }}
-                transition={{ duration: 1.2, delay: idx * 0.08 + 0.3, ease: 'easeOut' }}
-                style={{ background: `linear-gradient(90deg, ${team.color}, ${team.color}44)` }}
-              />
-
-              <div className="flex items-center gap-4 px-5 py-4">
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = '#1A2234';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = '#131A27';
+                }}
+              >
                 {/* Rank */}
-                <div className="w-8 text-center">
-                  {idx < 3 ? (
-                    <span className="text-xl">{rankMedals[idx]}</span>
-                  ) : (
-                    <span className="text-sm font-bold text-white/30">#{idx + 1}</span>
+                <div className="w-7 text-center flex-shrink-0">
+                  {idx === 0 && (
+                    <span className="font-black text-sm text-[#F8C03B]" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>01</span>
+                  )}
+                  {idx === 1 && (
+                    <span className="font-black text-sm text-[#94A3B8]" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>02</span>
+                  )}
+                  {idx === 2 && (
+                    <span className="font-black text-sm text-[#CD7F32]" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>03</span>
+                  )}
+                  {idx >= 3 && (
+                    <span className="font-bold text-xs text-[#4D5A70]" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
                   )}
                 </div>
 
                 {/* Team logo */}
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
                   style={{
                     background: `${team.color}1A`,
-                    border: `1px solid ${team.color}33`,
+                    border: `1px solid ${team.color}2A`,
                   }}
                 >
                   {team.logo}
                 </div>
 
-                {/* Team name */}
+                {/* Team info */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white truncate">{team.name}</div>
-                  <div className="text-xs text-white/40 mt-0.5">{team.wins} wins</div>
+                  <div className="font-semibold text-[#EEF2F7] text-sm leading-tight truncate">{team.name}</div>
+                  <div className="text-xs text-[#4D5A70] mt-0.5">{team.wins}W</div>
                 </div>
 
                 {/* Score */}
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <div
-                    className="text-xl font-black font-[Orbitron] tabular-nums"
+                    className="text-base font-black tabular-nums leading-none"
                     style={{
-                      color: team.color,
-                      textShadow: `0 0 20px ${team.color}88`,
+                      fontFamily: '"Space Grotesk", sans-serif',
+                      color: idx === 0 ? '#F8C03B' : '#EEF2F7',
                     }}
                   >
                     <AnimatedScore target={team.score} />
                   </div>
-                  <div className="text-xs text-white/30 uppercase tracking-wider">pts</div>
+                  <div className="text-xs text-[#4D5A70] mt-0.5 uppercase tracking-wider">pts</div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
+
+

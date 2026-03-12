@@ -18,7 +18,7 @@ const inputCls =
 const labelCls =
   'block text-xs uppercase tracking-wider text-white/40 mb-1.5 font-medium';
 const errorCls =
-  'text-xs text-[#FF2E88] mt-1 flex items-center gap-1';
+  'text-xs text-[#F87171] mt-1 flex items-center gap-1';
 
 function Field({
   label,
@@ -35,7 +35,7 @@ function Field({
     <div>
       <label className={labelCls}>
         {label}
-        {required && <span className="text-[#FF2E88] ml-0.5">*</span>}
+        {required && <span className="text-[#F87171] ml-0.5">*</span>}
       </label>
       {children}
       {error && (
@@ -97,10 +97,10 @@ function PhysicalForm({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <Field label="Venue" required error={errors.venue}>
-        <input className={errors.venue ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. Office Courtyard" value={form.venue} onChange={(e) => set('venue', e.target.value)} />
+        <input className={errors.venue ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. Office Courtyard" value={form.venue} onChange={(e) => set('venue', e.target.value)} />
       </Field>
       <Field label="Duration" required error={errors.duration}>
-        <input className={errors.duration ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. 90 min" value={form.duration} onChange={(e) => set('duration', e.target.value)} />
+        <input className={errors.duration ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. 90 min" value={form.duration} onChange={(e) => set('duration', e.target.value)} />
       </Field>
       <Field label="Equipment / Props">
         <input className={inputCls} placeholder="e.g. Cones, batons" value={form.equipment} onChange={(e) => set('equipment', e.target.value)} />
@@ -121,10 +121,10 @@ function QuizForm({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <Field label="Topic / Theme" required error={errors.topic}>
-        <input className={errors.topic ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. General Knowledge" value={form.topic} onChange={(e) => set('topic', e.target.value)} />
+        <input className={errors.topic ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. General Knowledge" value={form.topic} onChange={(e) => set('topic', e.target.value)} />
       </Field>
       <Field label="No. of Questions" required error={errors.numQuestions}>
-        <input type="number" className={errors.numQuestions ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. 20" min="1" value={form.numQuestions} onChange={(e) => set('numQuestions', e.target.value)} />
+        <input type="number" className={errors.numQuestions ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. 20" min="1" value={form.numQuestions} onChange={(e) => set('numQuestions', e.target.value)} />
       </Field>
       <Field label="Difficulty">
         <select className={`${inputCls} appearance-none`} value={form.difficulty} onChange={(e) => set('difficulty', e.target.value as 'Easy' | 'Medium' | 'Hard')}>
@@ -147,13 +147,13 @@ function CreativeForm({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <Field label="Medium" required error={errors.medium}>
-        <select className={`${errors.medium ? `${inputCls} border-[#FF2E88]` : inputCls} appearance-none`} value={form.medium} onChange={(e) => set('medium', e.target.value)}>
+        <select className={`${errors.medium ? `${inputCls} border-[#F87171]` : inputCls} appearance-none`} value={form.medium} onChange={(e) => set('medium', e.target.value)}>
           <option value="">Choose medium…</option>
           {['Art', 'Music', 'Writing', 'Design', 'Mixed'].map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </Field>
       <Field label="Theme" required error={errors.theme}>
-        <input className={errors.theme ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. Futuristic Studio" value={form.theme} onChange={(e) => set('theme', e.target.value)} />
+        <input className={errors.theme ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. Futuristic Studio" value={form.theme} onChange={(e) => set('theme', e.target.value)} />
       </Field>
       <Field label="Materials / Tools">
         <input className={inputCls} placeholder="e.g. Figma, Whiteboard" value={form.materials} onChange={(e) => set('materials', e.target.value)} />
@@ -179,10 +179,10 @@ function StrategyForm({
         </select>
       </Field>
       <Field label="Team Size" required error={errors.teamSize}>
-        <input type="number" className={errors.teamSize ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. 3" min="1" value={form.teamSize} onChange={(e) => set('teamSize', e.target.value)} />
+        <input type="number" className={errors.teamSize ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. 3" min="1" value={form.teamSize} onChange={(e) => set('teamSize', e.target.value)} />
       </Field>
       <Field label="Time Limit" required error={errors.timeLimit}>
-        <input className={errors.timeLimit ? `${inputCls} border-[#FF2E88]` : inputCls} placeholder="e.g. 60 min" value={form.timeLimit} onChange={(e) => set('timeLimit', e.target.value)} />
+        <input className={errors.timeLimit ? `${inputCls} border-[#F87171]` : inputCls} placeholder="e.g. 60 min" value={form.timeLimit} onChange={(e) => set('timeLimit', e.target.value)} />
       </Field>
     </div>
   );
@@ -201,7 +201,7 @@ function WildCardForm({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <Field label="Surprise Description" required error={errors.surprise}>
         <textarea
-          className={`${errors.surprise ? `${inputCls} border-[#FF2E88]` : inputCls} resize-none`}
+          className={`${errors.surprise ? `${inputCls} border-[#F87171]` : inputCls} resize-none`}
           rows={2}
           placeholder="What's the twist? (admin-only until reveal)"
           value={form.surprise}
@@ -219,8 +219,8 @@ function WildCardForm({
 
 const STATUS_META: Record<ManagedEventStatus, { label: string; color: string; bg: string }> = {
   draft:     { label: 'Draft',     color: '#FFFFFF66', bg: 'rgba(255,255,255,0.06)' },
-  scheduled: { label: 'Scheduled', color: '#00E5FF',   bg: 'rgba(0,229,255,0.1)' },
-  completed: { label: 'Completed', color: '#00FFC6',   bg: 'rgba(0,255,198,0.1)' },
+  scheduled: { label: 'Scheduled', color: '#38BDF8',   bg: 'rgba(56,189,248,0.1)' },
+  completed: { label: 'Completed', color: '#34D399',   bg: 'rgba(52,211,153,0.1)' },
 };
 
 function StatusPill({ status }: { status: ManagedEventStatus }) {
@@ -285,7 +285,7 @@ function EventCard({
       transition={{ duration: 0.25 }}
       className="rounded-xl border p-4 group"
       style={{
-        background: 'rgba(20, 12, 70, 0.55)',
+        background: '#131A27',
         borderColor: `${meta.color}22`,
       }}
     >
@@ -342,7 +342,7 @@ function EventCard({
           <button
             onClick={onComplete}
             className="flex-1 text-xs py-1.5 rounded-lg font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer hover:opacity-90"
-            style={{ background: 'rgba(0,255,198,0.1)', color: '#00FFC6', border: '1px solid rgba(0,255,198,0.2)' }}
+            style={{ background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.2)' }}
           >
             ✓ Mark Completed
           </button>
@@ -355,7 +355,7 @@ function EventCard({
         {confirmDelete ? (
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-white/40">Sure?</span>
-            <button onClick={onDelete} className="text-xs px-2.5 py-1.5 rounded-lg bg-[#FF2E8822] text-[#FF2E88] border border-[#FF2E8833] font-semibold cursor-pointer hover:bg-[#FF2E8833] transition-colors">
+            <button onClick={onDelete} className="text-xs px-2.5 py-1.5 rounded-lg bg-[rgba(248,113,113,0.15)] text-[#F87171] border border-[rgba(248,113,113,0.25)] font-semibold cursor-pointer hover:bg-[rgba(248,113,113,0.25)] transition-colors">
               Delete
             </button>
             <button onClick={() => setConfirmDelete(false)} className="text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
@@ -365,7 +365,7 @@ function EventCard({
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="text-xs px-2.5 py-1.5 rounded-lg text-white/30 border border-white/10 cursor-pointer hover:text-[#FF2E88] hover:border-[#FF2E8833] transition-all duration-200"
+            className="text-xs px-2.5 py-1.5 rounded-lg text-white/30 border border-white/10 cursor-pointer hover:text-[#F87171] hover:border-[rgba(248,113,113,0.25)] transition-all duration-200"
           >
             🗑
           </button>
@@ -481,9 +481,9 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
   const errors = submitted ? validate() : {};
 
   const TABS: { key: ManagedEventStatus; label: string; color: string }[] = [
-    { key: 'scheduled', label: 'Scheduled', color: '#00E5FF' },
+    { key: 'scheduled', label: 'Scheduled', color: '#38BDF8' },
     { key: 'draft',     label: 'Draft',     color: '#FFFFFF66' },
-    { key: 'completed', label: 'Completed', color: '#00FFC6' },
+    { key: 'completed', label: 'Completed', color: '#34D399' },
   ];
 
   return (
@@ -493,12 +493,12 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-            style={{ background: 'rgba(122,92,255,0.15)', border: '1px solid rgba(122,92,255,0.3)' }}
+            style={{ background: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.20)' }}
           >
             📋
           </div>
           <div>
-            <h2 className="text-lg font-black text-white font-[Orbitron]">Event Manager</h2>
+            <h2 className="text-lg font-black text-white" style={{ fontFamily: '"Space Grotesk", sans-serif' }}>Event Manager</h2>
             <p className="text-xs text-white/30 mt-0.5">{events.length} events · admin only</p>
           </div>
         </div>
@@ -507,9 +507,9 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
           onClick={() => { setFormOpen((v) => !v); setSelectedType(null); setForm(BLANK); setSubmitted(false); }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white cursor-pointer transition-all duration-200"
           style={{
-            background: formOpen ? 'rgba(122,92,255,0.15)' : 'linear-gradient(135deg, #7A5CFF, #00E5FF)',
-            border: formOpen ? '1px solid rgba(122,92,255,0.3)' : 'none',
-            boxShadow: formOpen ? 'none' : '0 0 20px #7A5CFF44',
+            background: formOpen ? 'rgba(56,189,248,0.10)' : 'linear-gradient(135deg, #38BDF8, #34D399)',
+            border: formOpen ? '1px solid rgba(56,189,248,0.25)' : 'none',
+            boxShadow: formOpen ? 'none' : '0 0 20px rgba(56,189,248,0.25)',
           }}
         >
           <span style={{ display: 'inline-block', transform: formOpen ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
@@ -530,10 +530,10 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
             <div
               className="rounded-2xl border p-6 space-y-5"
               style={{
-                background: 'rgba(16, 10, 60, 0.85)',
+                background: 'rgba(13,17,23,0.9)',
                 border: selectedType
                   ? `1px solid ${EVENT_TYPE_META[selectedType].color}33`
-                  : '1px solid rgba(122,92,255,0.2)',
+                  : '1px solid rgba(56,189,248,0.15)',
               }}
             >
               {/* Step 1: Pick type */}
@@ -608,7 +608,7 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Field label="Event Title" required error={errors.title}>
                         <input
-                          className={errors.title ? `${inputCls} border-[#FF2E88]` : inputCls}
+                          className={errors.title ? `${inputCls} border-[#F87171]` : inputCls}
                           placeholder="e.g. Spring Quiz Blitz"
                           value={form.title}
                           onChange={(e) => setField('title', e.target.value)}
@@ -649,7 +649,7 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
                         style={{
                           background: `linear-gradient(135deg, ${EVENT_TYPE_META[selectedType].color}CC, ${EVENT_TYPE_META[selectedType].color})`,
                           boxShadow: `0 0 20px ${EVENT_TYPE_META[selectedType].color}44`,
-                          color: '#0A0A0F',
+                          color: '#0D1117',
                         }}
                       >
                         ↑ Save & Schedule
@@ -710,7 +710,7 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="flex flex-col items-center gap-3 py-12 rounded-xl border border-dashed border-white/8"
-            style={{ background: 'rgba(20, 12, 65, 0.4)' }}
+            style={{ background: 'rgba(15,15,26,0.4)' }}
           >
             <span className="text-3xl opacity-25">
               {activeTab === 'draft' ? '📝' : activeTab === 'scheduled' ? '🗓️' : '✅'}

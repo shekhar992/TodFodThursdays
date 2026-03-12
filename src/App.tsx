@@ -10,10 +10,12 @@ import {
   mockHighlightEvents,
   mockUpcomingEvents,
   mockActivePuzzle,
+  mockManagedEvents,
   type Team,
   type Announcement,
   type Event,
   type Puzzle,
+  type ManagedEvent,
 } from './data/mockData';
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
   const [highlightEvents] = useState<Event[]>(mockHighlightEvents);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>(mockUpcomingEvents);
   const [activePuzzle, setActivePuzzle] = useState<Puzzle>(mockActivePuzzle);
+  const [managedEvents, setManagedEvents] = useState<ManagedEvent[]>(mockManagedEvents);
 
   const handleAddEvent = (event: Event) => {
     setUpcomingEvents((prev) => [event, ...prev]);
@@ -143,10 +146,12 @@ function App() {
                 announcements={announcements}
                 upcomingEvents={upcomingEvents}
                 activePuzzle={activePuzzle}
+                managedEvents={managedEvents}
                 onTeamsUpdate={setTeams}
                 onAddEvent={handleAddEvent}
                 onPostAnnouncement={handlePostAnnouncement}
                 onLaunchPuzzle={handleLaunchPuzzle}
+                onManagedEventsUpdate={setManagedEvents}
               />
             </motion.div>
           ) : (

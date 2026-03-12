@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NeonCard } from '../components/NeonCard';
-import type { Team, Announcement, Event, Puzzle } from '../data/mockData';
+import { EventManager } from '../components/EventManager';
+import type { Team, Announcement, Event, Puzzle, ManagedEvent } from '../data/mockData';
 
 interface Toast {
   id: number;
@@ -26,10 +27,12 @@ interface AdminDashboardProps {
   announcements: Announcement[];
   upcomingEvents: Event[];
   activePuzzle: Puzzle;
+  managedEvents: ManagedEvent[];
   onTeamsUpdate: (teams: Team[]) => void;
   onAddEvent: (event: Event) => void;
   onPostAnnouncement: (announcement: Announcement) => void;
   onLaunchPuzzle: (puzzle: Puzzle) => void;
+  onManagedEventsUpdate: (events: ManagedEvent[]) => void;
 }
 
 export function AdminDashboard({
@@ -37,10 +40,12 @@ export function AdminDashboard({
   announcements,
   upcomingEvents,
   activePuzzle,
+  managedEvents,
   onTeamsUpdate,
   onAddEvent,
   onPostAnnouncement,
   onLaunchPuzzle,
+  onManagedEventsUpdate,
 }: AdminDashboardProps) {
   const { toasts, addToast } = useToast();
 
@@ -378,6 +383,12 @@ export function AdminDashboard({
           </form>
         </NeonCard>
       </div>
+
+      {/* Divider */}
+      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(122,92,255,0.3), transparent)' }} />
+
+      {/* Event Manager */}
+      <EventManager events={managedEvents} onEventsUpdate={onManagedEventsUpdate} />
 
       {/* Toast notifications */}
       <div className="fixed bottom-6 right-6 space-y-2 z-50 pointer-events-none">

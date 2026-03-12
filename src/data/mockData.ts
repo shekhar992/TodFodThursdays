@@ -213,6 +213,137 @@ export const mockActivePuzzle: Puzzle = {
   isActive: true,
 };
 
+// ─── Managed Events (Admin-only) ───────────────────────────────────────────
+
+export type ManagedEventType = 'Physical' | 'Quiz' | 'Creative' | 'Strategy' | 'WildCard';
+export type ManagedEventStatus = 'draft' | 'scheduled' | 'completed';
+
+interface ManagedEventBase {
+  id: string;
+  type: ManagedEventType;
+  status: ManagedEventStatus;
+  title: string;
+  date: string;
+  description: string;
+  createdAt: number;
+}
+
+export interface PhysicalEvent extends ManagedEventBase {
+  type: 'Physical';
+  venue: string;
+  duration: string;
+  equipment: string;
+}
+
+export interface QuizEvent extends ManagedEventBase {
+  type: 'Quiz';
+  topic: string;
+  numQuestions: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+}
+
+export interface CreativeEvent extends ManagedEventBase {
+  type: 'Creative';
+  medium: string;
+  theme: string;
+  materials: string;
+}
+
+export interface StrategyEvent extends ManagedEventBase {
+  type: 'Strategy';
+  format: '1v1' | 'Team' | 'FFA';
+  teamSize: string;
+  timeLimit: string;
+}
+
+export interface WildCardEvent extends ManagedEventBase {
+  type: 'WildCard';
+  surprise: string;
+  revealDate: string;
+}
+
+export type ManagedEvent =
+  | PhysicalEvent
+  | QuizEvent
+  | CreativeEvent
+  | StrategyEvent
+  | WildCardEvent;
+
+export const EVENT_TYPE_META: Record<
+  ManagedEventType,
+  { label: string; emoji: string; color: string; description: string }
+> = {
+  Physical:  { label: 'Physical',  emoji: '🏃', color: '#00FFC6', description: 'Outdoor or indoor athletic challenges' },
+  Quiz:      { label: 'Quiz',      emoji: '🧠', color: '#00E5FF', description: 'Trivia, knowledge battles, rapid-fire rounds' },
+  Creative:  { label: 'Creative',  emoji: '🎨', color: '#FF2E88', description: 'Art, music, writing or design challenges' },
+  Strategy:  { label: 'Strategy',  emoji: '♟️', color: '#7A5CFF', description: 'Boardgame-style logic and tactics events' },
+  WildCard:  { label: 'Wild Card', emoji: '🃏', color: '#FFD700', description: 'Surprise format — revealed on the day' },
+};
+
+export const mockManagedEvents: ManagedEvent[] = [
+  {
+    id: 'me-1',
+    type: 'Physical',
+    status: 'completed',
+    title: 'Outdoor Sprint',
+    date: 'Mar 1, 2026',
+    description: 'Relay race with creative physical challenges between legs.',
+    venue: 'Office Courtyard',
+    duration: '90 min',
+    equipment: 'Cones, batons, stopwatch',
+    createdAt: 1740000000000,
+  },
+  {
+    id: 'me-2',
+    type: 'Quiz',
+    status: 'completed',
+    title: 'Quiz Battle Royale',
+    date: 'Mar 8, 2026',
+    description: 'Intense trivia showdown across 5 categories.',
+    topic: 'General Knowledge + Pop Culture',
+    numQuestions: '30',
+    difficulty: 'Medium',
+    createdAt: 1740600000000,
+  },
+  {
+    id: 'me-3',
+    type: 'Strategy',
+    status: 'scheduled',
+    title: 'Strategy Blitz',
+    date: 'Mar 19, 2026',
+    description: 'Boardgame-style strategy tournament with real-time decisions.',
+    format: 'Team',
+    teamSize: '3',
+    timeLimit: '60 min',
+    createdAt: 1741000000000,
+  },
+  {
+    id: 'me-4',
+    type: 'Creative',
+    status: 'scheduled',
+    title: 'Design Jam',
+    date: 'Mar 26, 2026',
+    description: 'Teams design a brand identity for a fictional studio in 45 minutes.',
+    medium: 'Design',
+    theme: 'Futuristic Studio',
+    materials: 'Figma / Whiteboard',
+    createdAt: 1741200000000,
+  },
+  {
+    id: 'me-5',
+    type: 'WildCard',
+    status: 'draft',
+    title: 'Mystery Event',
+    date: 'Apr 5, 2026',
+    description: 'Season finale surprise — format TBD.',
+    surprise: 'Combination of all event types in one mega-challenge.',
+    revealDate: 'Apr 4, 2026',
+    createdAt: 1741400000000,
+  },
+];
+
+// ───────────────────────────────────────────────────────────────────────────
+
 export const categoryColors: Record<string, string> = {
   Quiz: '#00E5FF',
   Puzzle: '#7A5CFF',

@@ -73,7 +73,7 @@ Scope:
 Output:
 UI components become reusable and data-agnostic.
 
-### Phase 4: Product UX Pass
+### Phase 4: Product UX Pass ✅ COMPLETED
 
 Objective:
 Improve demo credibility and usability.
@@ -85,6 +85,16 @@ Scope:
 - Smooth section navigation
 - Mobile layout review
 - Stronger player/admin mode distinction
+
+Implemented:
+- AnnouncementTicker shows a faded "No announcements yet" state when empty
+- UpcomingEvents shows an empty-state card when no events exist
+- EventHighlights shows an empty-state and hides scroll arrows when no events exist
+- AdminDashboard: all required fields show inline red border + error text on empty submit attempt
+- Hero CTA buttons scroll smoothly to #leaderboard and #puzzle-arena sections
+- Section IDs added: leaderboard, puzzle-arena, event-highlights, upcoming-events (all with scroll-mt-20)
+- Admin mode: header gets a pink-tinted background and border; a gradient top bar appears
+- Removed unused `announcements` prop from HomeProps (AnnouncementTicker lives in App.tsx)
 
 Output:
 The prototype feels intentional and presentation-ready.

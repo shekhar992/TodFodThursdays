@@ -38,6 +38,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] scanline-overlay noise-texture animated-gradient">
+      {/* Admin mode top bar */}
+      {role === 'admin' && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 h-0.5"
+          style={{ background: 'linear-gradient(90deg, #FF2E88, #7A5CFF, #FF2E88)' }}
+        />
+      )}
+
       {/* Announcement Ticker */}
       <AnnouncementTicker announcements={announcements} />
 
@@ -45,9 +53,13 @@ function App() {
       <header
         className="sticky top-0 z-40 h-16"
         style={{
-          background: 'rgba(10, 10, 15, 0.85)',
+          background: role === 'admin'
+            ? 'rgba(20, 8, 15, 0.92)'
+            : 'rgba(10, 10, 15, 0.85)',
           backdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+          borderBottom: role === 'admin'
+            ? '1px solid rgba(255, 46, 136, 0.2)'
+            : '1px solid rgba(255, 255, 255, 0.05)',
         }}
       >
         <div className="max-w-screen-xl mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-4">
@@ -141,7 +153,6 @@ function App() {
             <Home
               key="home"
               teams={teams}
-              announcements={announcements}
               highlightEvents={highlightEvents}
               upcomingEvents={upcomingEvents}
               activePuzzle={activePuzzle}

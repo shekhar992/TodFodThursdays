@@ -3,7 +3,7 @@ import { Leaderboard } from '../components/Leaderboard';
 import { PuzzleArena } from '../components/PuzzleArena';
 import { EventHighlights } from '../components/EventHighlights';
 import { UpcomingEvents } from '../components/UpcomingEvents';
-import type { Team, Announcement, Event, Puzzle } from '../data/mockData';
+import type { Team, Event, Puzzle } from '../data/mockData';
 
 const pageVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -12,7 +12,6 @@ const pageVariants = {
 
 interface HomeProps {
   teams: Team[];
-  announcements: Announcement[];
   highlightEvents: Event[];
   upcomingEvents: Event[];
   activePuzzle: Puzzle;
@@ -133,6 +132,7 @@ export function Home({ teams, highlightEvents, upcomingEvents, activePuzzle }: H
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
+            onClick={() => document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             className="btn-neon px-8 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider text-white cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #7A5CFF, #00E5FF)',
@@ -144,6 +144,7 @@ export function Home({ teams, highlightEvents, upcomingEvents, activePuzzle }: H
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
+            onClick={() => document.getElementById('puzzle-arena')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             className="btn-neon px-8 py-3.5 rounded-xl font-bold text-sm uppercase tracking-wider cursor-pointer"
             style={{
               background: 'transparent',
@@ -167,22 +168,22 @@ export function Home({ teams, highlightEvents, upcomingEvents, activePuzzle }: H
       </section>
 
       {/* Leaderboard */}
-      <section className="max-w-2xl mx-auto px-4 sm:px-6 w-full">
+      <section id="leaderboard" className="max-w-2xl mx-auto px-4 sm:px-6 w-full scroll-mt-20">
         <Leaderboard teams={teams} />
       </section>
 
       {/* Puzzle Arena */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 w-full">
+      <section id="puzzle-arena" className="max-w-3xl mx-auto px-4 sm:px-6 w-full scroll-mt-20">
         <PuzzleArena key={activePuzzle.id} puzzle={activePuzzle} />
       </section>
 
       {/* Event Highlights */}
-      <section className="px-4 sm:px-6 xl:px-12">
+      <section id="event-highlights" className="px-4 sm:px-6 xl:px-12 scroll-mt-20">
         <EventHighlights events={highlightEvents} />
       </section>
 
       {/* Upcoming Events */}
-      <section className="px-4 sm:px-6 xl:px-12">
+      <section id="upcoming-events" className="px-4 sm:px-6 xl:px-12 scroll-mt-20">
         <UpcomingEvents events={upcomingEvents} />
       </section>
     </motion.div>

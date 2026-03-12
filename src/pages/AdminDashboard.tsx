@@ -46,18 +46,23 @@ export function AdminDashboard({
 
   // Add Event state
   const [eventForm, setEventForm] = useState({ title: '', category: '', date: '', description: '' });
+  const [eventSubmitted, setEventSubmitted] = useState(false);
 
   // Post Announcement state
   const [announcement, setAnnouncement] = useState('');
+  const [announcementSubmitted, setAnnouncementSubmitted] = useState(false);
 
   // Launch Puzzle state
   const [puzzleForm, setPuzzleForm] = useState({ question: '', answer: '', points: '50' });
+  const [puzzleSubmitted, setPuzzleSubmitted] = useState(false);
 
   // Update Score state
   const [scoreForm, setScoreForm] = useState({ teamId: '', points: '' });
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
 
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault();
+    setEventSubmitted(true);
     if (!eventForm.title.trim()) return;
     const newEvent: Event = {
       id: `evt-${Date.now()}`,
@@ -73,10 +78,12 @@ export function AdminDashboard({
     onAddEvent(newEvent);
     addToast(`✅ Event "${newEvent.title}" added to schedule`);
     setEventForm({ title: '', category: '', date: '', description: '' });
+    setEventSubmitted(false);
   };
 
   const handlePostAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
+    setAnnouncementSubmitted(true);
     if (!announcement.trim()) return;
     const newAnnouncement: Announcement = {
       id: `ann-${Date.now()}`,
@@ -86,10 +93,12 @@ export function AdminDashboard({
     onPostAnnouncement(newAnnouncement);
     addToast(`📢 Announcement posted: "${announcement.slice(0, 40)}${announcement.length > 40 ? '...' : ''}"`);
     setAnnouncement('');
+    setAnnouncementSubmitted(false);
   };
 
   const handleLaunchPuzzle = (e: React.FormEvent) => {
     e.preventDefault();
+    setPuzzleSubmitted(true);
     if (!puzzleForm.question.trim() || !puzzleForm.answer.trim()) return;
     const pts = Math.max(10, Math.min(200, parseInt(puzzleForm.points, 10) || 50));
     const newPuzzle: Puzzle = {
@@ -103,10 +112,12 @@ export function AdminDashboard({
     onLaunchPuzzle(newPuzzle);
     addToast(`🧩 Puzzle launched! (${pts} pts)`);
     setPuzzleForm({ question: '', answer: '', points: '50' });
+    setPuzzleSubmitted(false);
   };
 
   const handleUpdateScore = (e: React.FormEvent) => {
     e.preventDefault();
+    setScoreSubmitted(true);
     const team = teams.find((t) => t.id === scoreForm.teamId);
     if (!team || !scoreForm.points) return;
     const delta = parseInt(scoreForm.points, 10);
@@ -117,10 +128,15 @@ export function AdminDashboard({
     onTeamsUpdate(updated);
     addToast(`⚡ ${team.name} score ${delta >= 0 ? '+' : ''}${delta} → ${Math.max(0, team.score + delta)} pts`);
     setScoreForm({ teamId: '', points: '' });
+    setScoreSubmitted(false);
   };
 
   const inputCls = 'cyber-input w-full px-4 py-3 rounded-xl text-sm';
   const labelCls = 'block text-xs uppercase tracking-wider text-white/40 mb-1.5 font-medium';
+  const errorCls = 'text-xs text-[#FF2E88] mt-1.5 flex items-center gap-1';
+
+  const errorInput = (base: string) =>
+    `${base} border-[#FF2E88] focus:border-[#FF2E88]`;
 
   return (
     <div className="space-y-8">
@@ -178,14 +194,16 @@ export function AdminDashboard({
           </div>
           <form onSubmit={handleAddEvent} className="space-y-3">
             <div>
-              <label className={labelCls}>Event Title</label>
+              <label className={labelCls}>Event Title <span className="text-[#FF2E88]">*</span></label>
               <input
-                className={inputCls}
+                className={eventSubmitted && !eventForm.title.trim() ? errorInput(inputCls) : inputCls}
                 placeholder="e.g. Decathlon Sprint"
                 value={eventForm.title}
                 onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
-                required
               />
+              {eventSubmitted && !eventForm.title.trim() && (
+                <p className={errorCls}><span>⚠</span> Event title is required</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -229,15 +247,17 @@ export function AdminDashboard({
           </div>
           <form onSubmit={handlePostAnnouncement} className="space-y-3">
             <div>
-              <label className={labelCls}>Announcement Text</label>
+              <label className={labelCls}>Announcement Text <span className="text-[#FF2E88]">*</span></label>
               <textarea
-                className={`${inputCls} resize-none`}
+                className={`${announcementSubmitted && !announcement.trim() ? errorInput(inputCls) : inputCls} resize-none`}
                 rows={4}
                 placeholder="Type your announcement here... (will appear in the ticker)"
                 value={announcement}
                 onChange={(e) => setAnnouncement(e.target.value)}
-                required
               />
+              {announcementSubmitted && !announcement.trim() && (
+                <p className={errorCls}><span>⚠</span> Announcement text is required</p>
+              )}
             </div>
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF2E8811] border border-[#FF2E8822]">
               <span className="text-xs">💡</span>
@@ -255,26 +275,30 @@ export function AdminDashboard({
           </div>
           <form onSubmit={handleLaunchPuzzle} className="space-y-3">
             <div>
-              <label className={labelCls}>Puzzle Question</label>
+              <label className={labelCls}>Puzzle Question <span className="text-[#FF2E88]">*</span></label>
               <textarea
-                className={`${inputCls} resize-none`}
+                className={`${puzzleSubmitted && !puzzleForm.question.trim() ? errorInput(inputCls) : inputCls} resize-none`}
                 rows={3}
                 placeholder="Enter your riddle or puzzle question..."
                 value={puzzleForm.question}
                 onChange={(e) => setPuzzleForm((f) => ({ ...f, question: e.target.value }))}
-                required
               />
+              {puzzleSubmitted && !puzzleForm.question.trim() && (
+                <p className={errorCls}><span>⚠</span> Question is required</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Answer</label>
+                <label className={labelCls}>Answer <span className="text-[#FF2E88]">*</span></label>
                 <input
-                  className={inputCls}
+                  className={puzzleSubmitted && !puzzleForm.answer.trim() ? errorInput(inputCls) : inputCls}
                   placeholder="Correct answer"
                   value={puzzleForm.answer}
                   onChange={(e) => setPuzzleForm((f) => ({ ...f, answer: e.target.value }))}
-                  required
                 />
+                {puzzleSubmitted && !puzzleForm.answer.trim() && (
+                  <p className={errorCls}><span>⚠</span> Required</p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>Points</label>
@@ -301,12 +325,11 @@ export function AdminDashboard({
           </div>
           <form onSubmit={handleUpdateScore} className="space-y-3">
             <div>
-              <label className={labelCls}>Select Team</label>
+              <label className={labelCls}>Select Team <span className="text-[#FF2E88]">*</span></label>
               <select
-                className={`${inputCls} appearance-none`}
+                className={`${scoreSubmitted && !scoreForm.teamId ? errorInput(inputCls) : inputCls} appearance-none`}
                 value={scoreForm.teamId}
                 onChange={(e) => setScoreForm((f) => ({ ...f, teamId: e.target.value }))}
-                required
               >
                 <option value="">Choose a team...</option>
                 {teams.map((t) => (
@@ -315,17 +338,22 @@ export function AdminDashboard({
                   </option>
                 ))}
               </select>
+              {scoreSubmitted && !scoreForm.teamId && (
+                <p className={errorCls}><span>⚠</span> Please select a team</p>
+              )}
             </div>
             <div>
-              <label className={labelCls}>Points Delta (+ to add, - to subtract)</label>
+              <label className={labelCls}>Points Delta (+ to add, - to subtract) <span className="text-[#FF2E88]">*</span></label>
               <input
                 type="number"
-                className={inputCls}
+                className={scoreSubmitted && !scoreForm.points ? errorInput(inputCls) : inputCls}
                 placeholder="e.g. +50 or -10"
                 value={scoreForm.points}
                 onChange={(e) => setScoreForm((f) => ({ ...f, points: e.target.value }))}
-                required
               />
+              {scoreSubmitted && !scoreForm.points && (
+                <p className={errorCls}><span>⚠</span> Points value is required</p>
+              )}
             </div>
             {/* Live preview */}
             {scoreForm.teamId && scoreForm.points && (

@@ -5,6 +5,19 @@ interface AnnouncementTickerProps {
 }
 
 export function AnnouncementTicker({ announcements }: AnnouncementTickerProps) {
+  if (announcements.length === 0) {
+    return (
+      <div className="relative overflow-hidden bg-[#0F0F1A] border-y border-[#00E5FF22]">
+        <div className="flex items-center justify-center py-3 gap-2">
+          <span className="text-sm text-white/20">📡</span>
+          <span className="text-xs text-white/20 uppercase tracking-widest">
+            No announcements yet — stay tuned
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const items = [...announcements, ...announcements]; // duplicate for seamless loop
 
   return (

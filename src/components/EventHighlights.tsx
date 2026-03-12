@@ -1,9 +1,13 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { mockHighlightEvents } from '../data/mockData';
+import type { Event } from '../data/mockData';
 import { EventCard } from './EventCard';
 
-export function EventHighlights() {
+interface EventHighlightsProps {
+  events: Event[];
+}
+
+export function EventHighlights({ events }: EventHighlightsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: 'left' | 'right') => {
@@ -38,7 +42,7 @@ export function EventHighlights() {
         className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {mockHighlightEvents.map((event, idx) => (
+        {events.map((event, idx) => (
           <EventCard key={event.id} event={event} index={idx} />
         ))}
 

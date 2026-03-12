@@ -1,8 +1,12 @@
 import { motion } from 'framer-motion';
-import { mockUpcomingEvents } from '../data/mockData';
+import type { Event } from '../data/mockData';
 import { categoryColors } from '../data/mockData';
 
-export function UpcomingEvents() {
+interface UpcomingEventsProps {
+  events: Event[];
+}
+
+export function UpcomingEvents({ events }: UpcomingEventsProps) {
   return (
     <section>
       <div className="flex items-center gap-3 mb-6">
@@ -12,7 +16,7 @@ export function UpcomingEvents() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockUpcomingEvents.map((event, idx) => {
+        {events.map((event, idx) => {
           const accentColor = categoryColors[event.category] ?? '#7A5CFF';
           return (
             <motion.div

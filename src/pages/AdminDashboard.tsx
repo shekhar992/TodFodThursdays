@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NeonCard } from '../components/NeonCard';
-import type { Team } from '../data/mockData';
+import type { Team, Announcement, Event, Puzzle } from '../data/mockData';
 
 interface Toast {
   id: number;
@@ -23,10 +23,25 @@ function useToast() {
 
 interface AdminDashboardProps {
   teams: Team[];
+  announcements: Announcement[];
+  upcomingEvents: Event[];
+  activePuzzle: Puzzle;
   onTeamsUpdate: (teams: Team[]) => void;
+  onAddEvent: (event: Event) => void;
+  onPostAnnouncement: (announcement: Announcement) => void;
+  onLaunchPuzzle: (puzzle: Puzzle) => void;
 }
 
-export function AdminDashboard({ teams, onTeamsUpdate }: AdminDashboardProps) {
+export function AdminDashboard({
+  teams,
+  announcements,
+  upcomingEvents,
+  activePuzzle,
+  onTeamsUpdate,
+  onAddEvent,
+  onPostAnnouncement,
+  onLaunchPuzzle,
+}: AdminDashboardProps) {
   const { toasts, addToast } = useToast();
 
   // Add Event state
@@ -44,21 +59,49 @@ export function AdminDashboard({ teams, onTeamsUpdate }: AdminDashboardProps) {
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventForm.title.trim()) return;
-    addToast(`✅ Event "${eventForm.title}" added to schedule`);
+    const newEvent: Event = {
+      id: `evt-${Date.now()}`,
+      title: eventForm.title.trim(),
+      category: eventForm.category.trim() || 'General',
+      date: eventForm.date
+        ? new Date(eventForm.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'TBD',
+      description: eventForm.description.trim() || 'No description provided.',
+      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=225&fit=crop',
+      status: 'upcoming',
+    };
+    onAddEvent(newEvent);
+    addToast(`✅ Event "${newEvent.title}" added to schedule`);
     setEventForm({ title: '', category: '', date: '', description: '' });
   };
 
   const handlePostAnnouncement = (e: React.FormEvent) => {
     e.preventDefault();
     if (!announcement.trim()) return;
-    addToast(`📢 Announcement posted: "${announcement.slice(0, 40)}..."`);
+    const newAnnouncement: Announcement = {
+      id: `ann-${Date.now()}`,
+      emoji: '📢',
+      text: announcement.trim(),
+    };
+    onPostAnnouncement(newAnnouncement);
+    addToast(`📢 Announcement posted: "${announcement.slice(0, 40)}${announcement.length > 40 ? '...' : ''}"`);
     setAnnouncement('');
   };
 
   const handleLaunchPuzzle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!puzzleForm.question.trim() || !puzzleForm.answer.trim()) return;
-    addToast(`🧩 Puzzle launched! (${puzzleForm.points} pts)`);
+    const pts = Math.max(10, Math.min(200, parseInt(puzzleForm.points, 10) || 50));
+    const newPuzzle: Puzzle = {
+      id: `pzl-${Date.now()}`,
+      question: puzzleForm.question.trim(),
+      hint: 'Think carefully...',
+      answer: puzzleForm.answer.trim(),
+      points: pts,
+      isActive: true,
+    };
+    onLaunchPuzzle(newPuzzle);
+    addToast(`🧩 Puzzle launched! (${pts} pts)`);
     setPuzzleForm({ question: '', answer: '', points: '50' });
   };
 
@@ -99,9 +142,9 @@ export function AdminDashboard({ teams, onTeamsUpdate }: AdminDashboardProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Teams', value: teams.length, icon: '🛡️', color: '#00E5FF' },
-          { label: 'Total Events', value: 11, icon: '🗓️', color: '#7A5CFF' },
-          { label: 'Active Puzzle', value: 1, icon: '🧩', color: '#00FFC6' },
-          { label: 'Announcements', value: 7, icon: '📢', color: '#FF2E88' },
+          { label: 'Upcoming Events', value: upcomingEvents.length, icon: '🗓️', color: '#7A5CFF' },
+          { label: 'Active Puzzle', value: activePuzzle.points, icon: '🧩', color: '#00FFC6' },
+          { label: 'Announcements', value: announcements.length, icon: '📢', color: '#FF2E88' },
         ].map((stat) => (
           <div
             key={stat.label}

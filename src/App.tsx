@@ -4,15 +4,42 @@ import { DevRoleSwitcher, type Role } from './components/DevRoleSwitcher';
 import { AnnouncementTicker } from './components/AnnouncementTicker';
 import { Home } from './pages/Home';
 import { AdminDashboard } from './pages/AdminDashboard';
-import { mockTeams, type Team } from './data/mockData';
+import {
+  mockTeams,
+  mockAnnouncements,
+  mockHighlightEvents,
+  mockUpcomingEvents,
+  mockActivePuzzle,
+  type Team,
+  type Announcement,
+  type Event,
+  type Puzzle,
+} from './data/mockData';
 
 function App() {
   const [role, setRole] = useState<Role>('player');
   const [teams, setTeams] = useState<Team[]>(mockTeams);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [highlightEvents] = useState<Event[]>(mockHighlightEvents);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>(mockUpcomingEvents);
+  const [activePuzzle, setActivePuzzle] = useState<Puzzle>(mockActivePuzzle);
+
+  const handleAddEvent = (event: Event) => {
+    setUpcomingEvents((prev) => [event, ...prev]);
+  };
+
+  const handlePostAnnouncement = (announcement: Announcement) => {
+    setAnnouncements((prev) => [announcement, ...prev]);
+  };
+
+  const handleLaunchPuzzle = (puzzle: Puzzle) => {
+    setActivePuzzle(puzzle);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0F] scanline-overlay noise-texture animated-gradient">
       {/* Announcement Ticker */}
-      <AnnouncementTicker />
+      <AnnouncementTicker announcements={announcements} />
 
       {/* Header / Nav */}
       <header
@@ -97,12 +124,28 @@ function App() {
                   className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
                   style={{ backgroundColor: '#FF2E88' }}
                 />
-                Admin Mode Active — Changes are simulated locally
+                Admin Mode Active — Changes update the player view in real time
               </div>
-              <AdminDashboard teams={teams} onTeamsUpdate={setTeams} />
+              <AdminDashboard
+                teams={teams}
+                announcements={announcements}
+                upcomingEvents={upcomingEvents}
+                activePuzzle={activePuzzle}
+                onTeamsUpdate={setTeams}
+                onAddEvent={handleAddEvent}
+                onPostAnnouncement={handlePostAnnouncement}
+                onLaunchPuzzle={handleLaunchPuzzle}
+              />
             </motion.div>
           ) : (
-            <Home key="home" teams={teams} />
+            <Home
+              key="home"
+              teams={teams}
+              announcements={announcements}
+              highlightEvents={highlightEvents}
+              upcomingEvents={upcomingEvents}
+              activePuzzle={activePuzzle}
+            />
           )}
         </AnimatePresence>
       </main>

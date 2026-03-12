@@ -1,7 +1,11 @@
-import { mockAnnouncements } from '../data/mockData';
+import type { Announcement } from '../data/mockData';
 
-export function AnnouncementTicker() {
-  const items = [...mockAnnouncements, ...mockAnnouncements]; // duplicate for seamless loop
+interface AnnouncementTickerProps {
+  announcements: Announcement[];
+}
+
+export function AnnouncementTicker({ announcements }: AnnouncementTickerProps) {
+  const items = [...announcements, ...announcements]; // duplicate for seamless loop
 
   return (
     <div className="relative overflow-hidden bg-[#0F0F1A] border-y border-[#00E5FF22]">

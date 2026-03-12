@@ -3,7 +3,7 @@ import { Leaderboard } from '../components/Leaderboard';
 import { PuzzleArena } from '../components/PuzzleArena';
 import { EventHighlights } from '../components/EventHighlights';
 import { UpcomingEvents } from '../components/UpcomingEvents';
-import type { Team } from '../data/mockData';
+import type { Team, Announcement, Event, Puzzle } from '../data/mockData';
 
 const pageVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -12,9 +12,13 @@ const pageVariants = {
 
 interface HomeProps {
   teams: Team[];
+  announcements: Announcement[];
+  highlightEvents: Event[];
+  upcomingEvents: Event[];
+  activePuzzle: Puzzle;
 }
 
-export function Home({ teams }: HomeProps) {
+export function Home({ teams, highlightEvents, upcomingEvents, activePuzzle }: HomeProps) {
   return (
     <motion.div
       key="home"
@@ -169,17 +173,17 @@ export function Home({ teams }: HomeProps) {
 
       {/* Puzzle Arena */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 w-full">
-        <PuzzleArena />
+        <PuzzleArena key={activePuzzle.id} puzzle={activePuzzle} />
       </section>
 
       {/* Event Highlights */}
       <section className="px-4 sm:px-6 xl:px-12">
-        <EventHighlights />
+        <EventHighlights events={highlightEvents} />
       </section>
 
       {/* Upcoming Events */}
       <section className="px-4 sm:px-6 xl:px-12">
-        <UpcomingEvents />
+        <UpcomingEvents events={upcomingEvents} />
       </section>
     </motion.div>
   );

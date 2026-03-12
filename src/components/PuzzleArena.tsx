@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { mockActivePuzzle } from '../data/mockData';
+import type { Puzzle } from '../data/mockData';
 const CONFETTI_COLORS = ['#00E5FF', '#FF2E88', '#7A5CFF', '#00FFC6', '#FFE600', '#FFD700'];
 
 function ConfettiPiece({ color, index }: { color: string; index: number }) {
@@ -23,8 +23,11 @@ function ConfettiPiece({ color, index }: { color: string; index: number }) {
   );
 }
 
-export function PuzzleArena() {
-  const puzzle = mockActivePuzzle;
+interface PuzzleArenaProps {
+  puzzle: Puzzle;
+}
+
+export function PuzzleArena({ puzzle }: PuzzleArenaProps) {
   const [answer, setAnswer] = useState('');
   const [status, setStatus] = useState<'idle' | 'success' | 'wrong'>('idle');
   const [showHint, setShowHint] = useState(false);

@@ -285,7 +285,7 @@ function EventCard({
       transition={{ duration: 0.25 }}
       className="rounded-xl border p-4 group"
       style={{
-        background: 'rgba(15, 15, 26, 0.7)',
+        background: 'rgba(20, 12, 70, 0.55)',
         borderColor: `${meta.color}22`,
       }}
     >
@@ -530,7 +530,7 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
             <div
               className="rounded-2xl border p-6 space-y-5"
               style={{
-                background: 'rgba(10, 10, 20, 0.8)',
+                background: 'rgba(16, 10, 60, 0.85)',
                 border: selectedType
                   ? `1px solid ${EVENT_TYPE_META[selectedType].color}33`
                   : '1px solid rgba(122,92,255,0.2)',
@@ -710,7 +710,7 @@ export function EventManager({ events, onEventsUpdate }: EventManagerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="flex flex-col items-center gap-3 py-12 rounded-xl border border-dashed border-white/8"
-            style={{ background: 'rgba(15,15,26,0.4)' }}
+            style={{ background: 'rgba(20, 12, 65, 0.4)' }}
           >
             <span className="text-3xl opacity-25">
               {activeTab === 'draft' ? '📝' : activeTab === 'scheduled' ? '🗓️' : '✅'}

@@ -51,7 +51,7 @@ export function Leaderboard({ teams = mockTeams }: LeaderboardProps) {
               className="relative overflow-hidden rounded-xl border transition-all duration-300 cursor-default group"
               style={{
                 borderColor: `${team.color}22`,
-                background: `rgba(15, 15, 26, 0.7)`,
+                background: `rgba(20, 12, 70, 0.5)`,
               }}
             >
               {/* Hover glow */}

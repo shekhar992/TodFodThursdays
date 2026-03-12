@@ -40,7 +40,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] scanline-overlay noise-texture animated-gradient">
+    <div className="min-h-screen scanline-overlay noise-texture animated-gradient">
       {/* Admin mode top bar */}
       {role === 'admin' && (
         <div
@@ -57,12 +57,12 @@ function App() {
         className="sticky top-0 z-40 h-16"
         style={{
           background: role === 'admin'
-            ? 'rgba(20, 8, 15, 0.92)'
-            : 'rgba(10, 10, 15, 0.85)',
+            ? 'rgba(45, 18, 65, 0.94)'
+            : 'rgba(35, 22, 110, 0.90)',
           backdropFilter: 'blur(20px) saturate(180%)',
           borderBottom: role === 'admin'
             ? '1px solid rgba(255, 46, 136, 0.2)'
-            : '1px solid rgba(255, 255, 255, 0.05)',
+            : '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
         <div className="max-w-screen-xl mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-4">

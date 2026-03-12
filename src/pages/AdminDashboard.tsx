@@ -171,7 +171,7 @@ export function AdminDashboard({
             key={stat.label}
             className="rounded-xl p-4"
             style={{
-              background: 'rgba(15, 15, 26, 0.7)',
+              background: 'rgba(20, 12, 70, 0.5)',
               border: `1px solid ${stat.color}22`,
             }}
           >
@@ -402,7 +402,7 @@ export function AdminDashboard({
               transition={{ type: 'spring', bounce: 0.3, duration: 0.4 }}
               className="px-5 py-3.5 rounded-xl text-sm font-medium text-white max-w-sm pointer-events-auto"
               style={{
-                background: 'rgba(15, 15, 26, 0.95)',
+                background: 'rgba(20, 12, 70, 0.97)',
                 border: '1px solid #00FFC644',
                 boxShadow: '0 8px 32px #00000066, 0 0 20px #00FFC622',
                 backdropFilter: 'blur(20px)',

@@ -21,7 +21,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="col-span-full flex flex-col items-center justify-center gap-4 py-16 rounded-xl border border-dashed border-white/10"
-            style={{ background: 'rgba(15, 15, 26, 0.5)' }}
+            style={{ background: 'rgba(20, 12, 70, 0.4)' }}
           >
             <span className="text-4xl opacity-30">🗓️</span>
             <div className="text-center">
@@ -41,7 +41,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
                 whileHover={{ y: -3 }}
                 className="group relative rounded-xl overflow-hidden cursor-default"
                 style={{
-                  background: 'rgba(15, 15, 26, 0.8)',
+                  background: 'rgba(20, 12, 70, 0.6)',
                   border: `1px solid ${accentColor}22`,
                 }}
                 onMouseEnter={(e) => {
@@ -60,7 +60,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
                     alt={event.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F1A] via-[#0F0F1A55] to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a0d55] via-[#1a0d5555] to-transparent" />
 
                   {/* Upcoming badge */}
                   <div

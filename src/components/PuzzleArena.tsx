@@ -62,7 +62,7 @@ export function PuzzleArena({ puzzle }: PuzzleArenaProps) {
         className="relative overflow-hidden rounded-2xl border transition-all duration-500"
         style={{
           borderColor,
-          background: 'rgba(15, 15, 26, 0.8)',
+          background: 'rgba(20, 12, 70, 0.6)',
           boxShadow:
             status === 'success'
               ? '0 0 40px #00FFC644, 0 0 80px #00FFC622'

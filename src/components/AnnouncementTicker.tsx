@@ -23,9 +23,9 @@ export function AnnouncementTicker({ announcements }: AnnouncementTickerProps) {
   return (
     <div className="relative overflow-hidden bg-[#0F0F1A] border-y border-[#00E5FF22]">
       {/* Left fade */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#0F0F1A] to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#1a0d55] to-transparent z-10 pointer-events-none" />
       {/* Right fade */}
-      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#0F0F1A] to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#1a0d55] to-transparent z-10 pointer-events-none" />
 
       <div className="flex py-3">
         <div className="ticker-scroll flex items-center whitespace-nowrap gap-0">

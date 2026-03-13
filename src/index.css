@@ -1,100 +1,78 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-@theme {
-  --color-bg:        #0D1117;
-  --color-surface:   #131A27;
-  --color-surface-2: #1A2234;
-  --color-surface-3: #232F47;
-  --color-accent:    #38BDF8;
-  --color-admin:     #F59E0B;
-  --color-success:   #34D399;
-  --color-danger:    #F87171;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-body:    "Inter", sans-serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  :root {
+    --background: 216 28% 7%;
+    --foreground: 0 0% 100%;
 
-html {
-  scroll-behavior: smooth;
-}
+    --card: 219 33% 11%;
+    --card-foreground: 0 0% 100%;
 
-body {
-  background-color: #0D1117;
-  color: #EEF2F7;
-  font-family: "Inter", sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+    --popover: 219 33% 11%;
+    --popover-foreground: 0 0% 100%;
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0D1117;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.25);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.45);
-}
+    --primary: 199 89% 60%;
+    --primary-foreground: 216 28% 7%;
 
-/* Surface card */
-.surface {
-  background: #131A27;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
+    --secondary: 219 33% 16%;
+    --secondary-foreground: 0 0% 100%;
 
-/* Glassmorphism — backdrop blur for nav */
-.glass {
-  background: rgba(13, 17, 23, 0.80);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+    --muted: 219 33% 16%;
+    --muted-foreground: 240 4% 66%;
+
+    --accent: 219 33% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 219 20% 18%;
+    --input: 219 20% 18%;
+    --ring: 199 89% 60%;
+
+    --radius: 0.5rem;
+
+    --gold: 43 93% 60%;
+    --gold-foreground: 216 28% 7%;
+    --amber: 38 92% 50%;
+    --amber-foreground: 216 28% 7%;
+
+    --sidebar-background: 219 33% 9%;
+    --sidebar-foreground: 240 4% 66%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 216 28% 7%;
+    --sidebar-accent: 219 33% 14%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 219 20% 18%;
+    --sidebar-ring: 38 92% 50%;
+
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
 }
 
-/* Ticker animation */
-@keyframes tickerScroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
 }
 
-.ticker-scroll {
-  animation: tickerScroll 30s linear infinite;
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
 }
-
-/* Input styling */
-.cyber-input {
-  background: rgba(19, 26, 39, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: #EEF2F7;
-  transition: border-color 0.18s, box-shadow 0.18s;
-}
-.cyber-input:focus {
-  outline: none;
-  border-color: #38BDF8;
-  box-shadow: 0 0 0 2px #0D1117, 0 0 0 4px rgba(56, 189, 248, 0.25);
-}
-.cyber-input::placeholder {
-  color: rgba(238, 242, 247, 0.25);
-}
-
-/* Button base */
-.btn-neon {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.18s ease;
-}
-
-/* Rank colors */
-.rank-1 { color: #F8C03B; }
-.rank-2 { color: #94A3B8; }
-.rank-3 { color: #CD7F32; }

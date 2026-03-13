@@ -109,10 +109,12 @@ export function LoginPage({ onCancel, onSwitchToSignUp, variant = 'player' }: Lo
           )}
 
           {error && (
-            error === 'RATE_LIMIT' ? (
+            error === 'RATE_LIMIT' || error === 'SMTP_ERROR' ? (
               <Alert className="border-amber-500/40 bg-amber-500/10">
                 <AlertDescription className="text-amber-300">
-                  Too many attempts — please wait a few minutes and try again.
+                  {error === 'RATE_LIMIT'
+                    ? 'Too many attempts — please wait a few minutes and try again.'
+                    : 'Could not send the reset email. Please try again in a moment.'}
                 </AlertDescription>
               </Alert>
             ) : (

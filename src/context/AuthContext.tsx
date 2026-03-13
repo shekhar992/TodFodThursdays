@@ -157,7 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) {
         return { error: 'EMAIL_ALREADY_EXISTS' };
       }
-      return { error: friendlyError(error.message) };
+      // Final catch-all: any remaining SMTP sentinel → still a dupe
+      const mapped = friendlyError(error.message);
+      if (mapped === 'SMTP_ERROR') return { error: 'EMAIL_ALREADY_EXISTS' };
+      return { error: mapped };
     }
     // When email enumeration protection is ON, Supabase silently succeeds but
     // returns a user with an empty identities array to signal the dupe.

@@ -36,6 +36,9 @@ function friendlyError(msg: string): string {
   if (lower.includes('rate limit') || lower.includes('too many requests')) {
     return 'RATE_LIMIT';
   }
+  if (lower.includes('error sending') || lower.includes('smtp') || lower.includes('sending recovery')) {
+    return 'SMTP_ERROR';
+  }
   return msg;
 }
 
@@ -141,6 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error.message.toLowerCase().includes('already registered') ||
         error.message.toLowerCase().includes('already exists') ||
         error.message.toLowerCase().includes('user already')
+      ) {
+        return { error: 'EMAIL_ALREADY_EXISTS' };
+      }
+      // Enumeration protection ON + SMTP misconfigured: Supabase tries to send
+      // a notification to the existing user but the email delivery fails.
+      // The underlying cause is still a duplicate email.
+      if (
+        error.message.toLowerCase().includes('error sending') ||
+        error.message.toLowerCase().includes('sending recovery') ||
+        error.message.toLowerCase().includes('smtp')
       ) {
         return { error: 'EMAIL_ALREADY_EXISTS' };
       }

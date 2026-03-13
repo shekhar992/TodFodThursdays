@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMockRole('new-player');
       return { error: null };
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     if (error) {
-      // Supabase returns this message when the email is already registered
+      // Supabase returns this when email enumeration protection is OFF
       if (
         error.message.toLowerCase().includes('already registered') ||
         error.message.toLowerCase().includes('already exists') ||
@@ -126,6 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: 'EMAIL_ALREADY_EXISTS' };
       }
       return { error: error.message };
+    }
+    // When email enumeration protection is ON, Supabase silently succeeds but
+    // returns a user with an empty identities array to signal the dupe.
+    if (data?.user && data.user.identities?.length === 0) {
+      return { error: 'EMAIL_ALREADY_EXISTS' };
     }
     return { error: null };
   };

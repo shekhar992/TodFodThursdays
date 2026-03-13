@@ -8,19 +8,21 @@ import { SignUpPage } from "@/components/SignUpPage";
 import { ResetPasswordPage } from "@/components/ResetPasswordPage";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { isMockMode } from "@/lib/mockAuth";
 
 type AuthScreen = "login" | "signup" | null;
-type LoginVariant = "player" | "admin";
 
 const Index = () => {
   const { user, profile, isAdmin, signOut, signIn, loading, profileLoading, isPasswordRecovery } = useAuth();
   const [authScreen, setAuthScreen] = useState<AuthScreen>(null);
-  const [loginVariant, setLoginVariant] = useState<LoginVariant>("player");
 
-  const openPlayerLogin = () => { setLoginVariant("player"); setAuthScreen("login"); };
-  const openAdminLogin  = () => { setLoginVariant("admin");  setAuthScreen("login"); };
+  // Auto-show login overlay the first time a visitor lands (once auth resolves)
+  useEffect(() => {
+    if (!loading && !user && !isMockMode) {
+      setAuthScreen("login");
+    }
+  }, [loading, user]);
 
   // Auto-close auth screen when logged in
   useEffect(() => {
@@ -43,18 +45,9 @@ const Index = () => {
 
   // ── Auth screens (not logged in) ───────────────────────────────────────
   if (!isMockMode && authScreen === "signup") {
-    return <SignUpPage onSwitchToLogin={openPlayerLogin} />;
+    return <SignUpPage onSwitchToLogin={() => setAuthScreen("login")} />;
   }
 
-  if (!isMockMode && authScreen === "login") {
-    return (
-      <LoginPage
-        variant={loginVariant}
-        onCancel={() => setAuthScreen(null)}
-        onSwitchToSignUp={() => setAuthScreen("signup")}
-      />
-    );
-  }
 
   // ── Logged-in routing ──────────────────────────────────────────────────
   // user exists but no profile row (created before migration) — show error
@@ -114,10 +107,10 @@ const Index = () => {
     );
   }
 
-  // ── Not logged in → public player dashboard with auth buttons ─────────
+  // ── Not logged in → arena background + login overlay ───────────────────
   return (
     <ArenaProvider>
-      {/* Mock mode switcher — flows above nav so it never covers it */}
+      {/* Mock mode switcher */}
       {isMockMode && (
         <div className="relative z-[70] bg-amber-400 text-black text-xs px-4 py-1.5 flex items-center justify-between shadow-sm">
           <span className="font-bold">🧪 Mock Mode</span>
@@ -144,29 +137,27 @@ const Index = () => {
         </div>
       )}
 
-      <PlayerDashboard />
+      {/* Arena background — always visible, non-interactive when modal is up */}
+      <div className={!isMockMode && authScreen ? "pointer-events-none select-none" : ""}>
+        <PlayerDashboard />
+      </div>
 
-      {/* Auth buttons — hidden in mock mode (use the banner instead) */}
-      {!isMockMode && (
-        <div className="fixed bottom-4 right-4 z-50 flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shadow-lg"
-            onClick={() => setAuthScreen("signup")}
-          >
-            🎮 Join as Player
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 shadow-lg"
-            onClick={openAdminLogin}
-          >
-            <Shield className="h-4 w-4" />
-            Admin
-          </Button>
-        </div>
+      {/* Login overlay — blurred window into the arena behind */}
+      {!isMockMode && authScreen === "login" && (
+        <LoginPage
+          onCancel={() => setAuthScreen(null)}
+          onSwitchToSignUp={() => setAuthScreen("signup")}
+        />
+      )}
+
+      {/* Tiny re-entry link if user dismissed as spectator */}
+      {!isMockMode && !authScreen && (
+        <button
+          onClick={() => setAuthScreen("login")}
+          className="fixed bottom-4 right-4 z-50 text-xs text-muted-foreground hover:text-primary underline underline-offset-4"
+        >
+          Sign In
+        </button>
       )}
     </ArenaProvider>
   );

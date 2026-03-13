@@ -14,11 +14,13 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onCancel, onSwitchToSignUp, variant = 'player' }: LoginPageProps) {
-  const { signIn } = useAuth();
+  const { signIn, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const isAdmin = variant === 'admin';
   const icon = isAdmin
@@ -37,6 +39,16 @@ export function LoginPage({ onCancel, onSwitchToSignUp, variant = 'player' }: Lo
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) setError(error);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) { setError("Enter your email above first."); return; }
+    setError(null);
+    setResetLoading(true);
+    const { error } = await resetPassword(email);
+    setResetLoading(false);
+    if (error) { setError(error); return; }
+    setResetSent(true);
   };
 
   return (
@@ -78,6 +90,23 @@ export function LoginPage({ onCancel, onSwitchToSignUp, variant = 'player' }: Lo
               required
             />
           </div>
+
+          {!isAdmin && (
+            <div className="text-right -mt-1">
+              {resetSent ? (
+                <span className="text-xs text-emerald-400">✓ Reset link sent to {email}</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                  className="text-xs text-muted-foreground hover:text-primary underline underline-offset-4 disabled:opacity-50"
+                >
+                  {resetLoading ? "Sending…" : "Forgot Password?"}
+                </button>
+              )}
+            </div>
+          )}
 
           {error && (
             <Alert variant="destructive">

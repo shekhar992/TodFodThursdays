@@ -11,13 +11,25 @@ interface SignUpPageProps {
 }
 
 export function SignUpPage({ onSwitchToLogin }: SignUpPageProps) {
-  const { signUp } = useAuth();
+  const { signUp, resetPassword } = useAuth();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email) { setError("Enter your email above first."); return; }
+    setError(null);
+    setResetLoading(true);
+    const { error } = await resetPassword(email);
+    setResetLoading(false);
+    if (error) { setError(error); return; }
+    setResetSent(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +129,19 @@ export function SignUpPage({ onSwitchToLogin }: SignUpPageProps) {
                 >
                   Sign in instead →
                 </button>
+                {" · "}
+                {resetSent ? (
+                  <span className="text-emerald-400">✓ Reset link sent!</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="font-semibold underline underline-offset-4 hover:opacity-80 disabled:opacity-50"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Sending…" : "Forgot Password?"}
+                  </button>
+                )}
               </AlertDescription>
             </Alert>
           ) : error ? (

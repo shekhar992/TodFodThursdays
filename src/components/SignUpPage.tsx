@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, UserCheck } from "lucide-react";
 
 interface SignUpPageProps {
   onSwitchToLogin: () => void;
@@ -105,11 +105,25 @@ export function SignUpPage({ onSwitchToLogin }: SignUpPageProps) {
             />
           </div>
 
-          {error && (
+          {error === 'EMAIL_ALREADY_EXISTS' ? (
+            <Alert className="border-amber-500/40 bg-amber-500/10">
+              <UserCheck className="h-4 w-4 text-amber-400 shrink-0" />
+              <AlertDescription className="text-amber-300">
+                An account with this email already exists.{" "}
+                <button
+                  type="button"
+                  className="font-semibold underline underline-offset-4 hover:opacity-80"
+                  onClick={onSwitchToLogin}
+                >
+                  Sign in instead →
+                </button>
+              </AlertDescription>
+            </Alert>
+          ) : error ? (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (

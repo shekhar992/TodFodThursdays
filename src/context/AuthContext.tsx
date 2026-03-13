@@ -116,7 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/`,
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      // Supabase returns this message when the email is already registered
+      if (
+        error.message.toLowerCase().includes('already registered') ||
+        error.message.toLowerCase().includes('already exists') ||
+        error.message.toLowerCase().includes('user already')
+      ) {
+        return { error: 'EMAIL_ALREADY_EXISTS' };
+      }
+      return { error: error.message };
+    }
     return { error: null };
   };
 

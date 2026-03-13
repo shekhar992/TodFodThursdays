@@ -30,6 +30,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Normalize raw Supabase error messages into user-friendly strings
+function friendlyError(msg: string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes('rate limit') || lower.includes('too many requests')) {
+    return 'RATE_LIMIT';
+  }
+  return msg;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -135,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) {
         return { error: 'EMAIL_ALREADY_EXISTS' };
       }
-      return { error: error.message };
+      return { error: friendlyError(error.message) };
     }
     // When email enumeration protection is ON, Supabase silently succeeds but
     // returns a user with an empty identities array to signal the dupe.
@@ -153,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyError(error.message) };
     return { error: null };
   };
 
@@ -167,14 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/`,
     });
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyError(error.message) };
     return { error: null };
   };
 
   const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
     if (isMockMode) return { error: null };
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyError(error.message) };
     setIsPasswordRecovery(false);
     return { error: null };
   };

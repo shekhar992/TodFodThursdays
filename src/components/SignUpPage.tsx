@@ -144,6 +144,12 @@ export function SignUpPage({ onSwitchToLogin }: SignUpPageProps) {
                 )}
               </AlertDescription>
             </Alert>
+          ) : error === 'RATE_LIMIT' ? (
+            <Alert className="border-amber-500/40 bg-amber-500/10">
+              <AlertDescription className="text-amber-300">
+                Too many attempts — please wait a few minutes and try again.
+              </AlertDescription>
+            </Alert>
           ) : error ? (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>

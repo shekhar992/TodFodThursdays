@@ -109,9 +109,17 @@ export function LoginPage({ onCancel, onSwitchToSignUp, variant = 'player' }: Lo
           )}
 
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            error === 'RATE_LIMIT' ? (
+              <Alert className="border-amber-500/40 bg-amber-500/10">
+                <AlertDescription className="text-amber-300">
+                  Too many attempts — please wait a few minutes and try again.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>

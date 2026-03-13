@@ -24,6 +24,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  isPasswordRecovery: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // ── Mock mode: wire up in-memory auth ─────────────────────────────────
   const setMockRole = useCallback((role: MockRole | null) => {
@@ -92,6 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setSession(session);
+        setUser(session?.user ?? null);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -162,10 +171,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
+  const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
+    if (isMockMode) return { error: null };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
+    setIsPasswordRecovery(false);
+    return { error: null };
+  };
+
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, isAdmin, loading, profileLoading, signUp, signIn, signOut, refreshProfile, resetPassword }}>
+    <AuthContext.Provider value={{ user, session, profile, isAdmin, loading, profileLoading, signUp, signIn, signOut, refreshProfile, resetPassword, updatePassword, isPasswordRecovery }}>
       {children}
     </AuthContext.Provider>
   );

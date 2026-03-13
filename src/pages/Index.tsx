@@ -5,6 +5,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SpinnerPage } from "@/components/player/SpinnerPage";
 import { LoginPage } from "@/components/LoginPage";
 import { SignUpPage } from "@/components/SignUpPage";
+import { ResetPasswordPage } from "@/components/ResetPasswordPage";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Shield } from "lucide-react";
@@ -14,7 +15,7 @@ type AuthScreen = "login" | "signup" | null;
 type LoginVariant = "player" | "admin";
 
 const Index = () => {
-  const { user, profile, isAdmin, signOut, signIn, loading, profileLoading } = useAuth();
+  const { user, profile, isAdmin, signOut, signIn, loading, profileLoading, isPasswordRecovery } = useAuth();
   const [authScreen, setAuthScreen] = useState<AuthScreen>(null);
   const [loginVariant, setLoginVariant] = useState<LoginVariant>("player");
 
@@ -33,6 +34,11 @@ const Index = () => {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  // ── Password recovery flow ────────────────────────────────────────────
+  if (isPasswordRecovery) {
+    return <ResetPasswordPage />;
   }
 
   // ── Auth screens (not logged in) ───────────────────────────────────────

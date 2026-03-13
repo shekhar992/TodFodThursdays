@@ -134,22 +134,249 @@ export const mockHighlightEvents: Event[] = [
 ];
 
 export const mockUpcomingEvents: Event[] = [
-  { id: 'u1', title: 'Treasure Hunt',   category: 'Adventure',    date: '2026-03-15', description: 'Campus-wide treasure hunt with cryptic clues', image: '', status: 'upcoming' },
-  { id: 'u2', title: 'Escape Puzzle',   category: 'Puzzle',       date: '2026-03-19', description: 'Digital escape room with layered riddles',      image: '', status: 'upcoming' },
-  { id: 'u3', title: 'Outdoor Olympics',category: 'Physical',     date: '2026-03-22', description: 'Multi-sport outdoor relay event',               image: '', status: 'upcoming' },
-  { id: 'u4', title: 'Debate Duel',     category: 'Strategy',     date: '2026-03-26', description: 'Head-to-head rapid-fire debates',               image: '', status: 'upcoming' },
-  { id: 'u5', title: 'Code Golf',       category: 'Tech',         date: '2026-03-29', description: 'Solve problems in the fewest characters',        image: '', status: 'upcoming' },
-  { id: 'u6', title: 'Final Showdown',  category: 'Grand Finale', date: '2026-04-05', description: 'The ultimate season finale challenge',           image: '', status: 'upcoming' },
+  { id: 'u1', title: 'Treasure Hunt',         category: 'Adventure',    date: '2026-03-15', description: 'Campus-wide hunt with cryptic location clues and photo checkpoints',   image: '', status: 'upcoming' },
+  { id: 'u2', title: 'Digital Escape Room',   category: 'Puzzle',       date: '2026-03-19', description: 'Five layered digital puzzles — solve them faster than every other team', image: '', status: 'upcoming' },
+  { id: 'u3', title: 'Outdoor Relay Wars',    category: 'Physical',     date: '2026-03-22', description: 'Four physical challenges, one relay format, and serious bragging rights', image: '', status: 'upcoming' },
+  { id: 'u4', title: 'Debate Duel',           category: 'Strategy',     date: '2026-03-26', description: 'Topic revealed 10 min before start. No prep. Pure wits.',                image: '', status: 'upcoming' },
+  { id: 'u5', title: 'Hack & Pitch',          category: 'Tech',         date: '2026-03-29', description: 'Build a no-code solution in 2 hrs, pitch it in 2 min — judges will not be gentle', image: '', status: 'upcoming' },
+  { id: 'u6', title: 'Grand Finale',          category: 'Grand Finale', date: '2026-04-05', description: 'Three rounds, all disciplines, one champion. The season ends here.',      image: '', status: 'upcoming' },
 ];
 
 export const mockActivePuzzle: Puzzle = {
   id: 'pz1',
-  question: 'I speak without a mouth and hear without ears. I have no body, but I come alive with the wind.',
-  answer: 'echo',
-  hint: 'Think about sound bouncing back.',
+  question: "I'm always hungry and must always be fed. The finger I lick will soon turn red. What am I?",
+  answer: 'fire',
+  hint: 'Think heat, light, and danger.',
   points: 50,
   isActive: true,
 };
+
+// ─── Rich event details (for EventsView demo) ────────────────────────────────
+
+export interface EventDetail {
+  emoji: string;
+  format: string;
+  duration: string;
+  rules: string[];
+  pointsBreakdown: { place: string; pts: number }[];
+  winner?: string;      // past events only
+  winnerLogo?: string;
+  color: string;
+}
+
+export const EVENT_DETAILS: Record<string, EventDetail> = {
+  // ── Upcoming ──────────────────────────────────────────────────────────────
+  u1: {
+    emoji: '🗺️',
+    format: 'Campus-wide · All Teams',
+    duration: '90 min',
+    color: '#FF6B35',
+    rules: [
+      'Each team receives a sealed envelope with the first clue at 10:00 AM',
+      'Clues are location-based — you must physically visit each spot',
+      'Photograph proof required at every checkpoint',
+      'No rideshares or vehicles — foot traffic only',
+      'First team to return with all 8 stamps wins',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 1st', pts: 100 },
+      { place: '🥈 2nd', pts: 70 },
+      { place: '🥉 3rd', pts: 50 },
+      { place: '4th–6th', pts: 20 },
+    ],
+  },
+  u2: {
+    emoji: '🧩',
+    format: 'Digital · Team of 4',
+    duration: '45 min',
+    color: '#00E5FF',
+    rules: [
+      'Teams enter a shared digital escape room link at exactly 3:00 PM',
+      'Five layered puzzles must be solved in sequence',
+      'One hint available per puzzle — use wisely',
+      'Submissions close the moment the timer hits zero',
+      'Partial completion counts: each solved room = 10 bonus pts',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 1st', pts: 100 },
+      { place: '🥈 2nd', pts: 70 },
+      { place: '🥉 3rd', pts: 50 },
+      { place: 'Each room solved', pts: 10 },
+    ],
+  },
+  u3: {
+    emoji: '🏃',
+    format: 'Outdoor · Multi-Sport Relay',
+    duration: '90 min',
+    color: '#00FFC6',
+    rules: [
+      'Four physical challenges back-to-back: Sprint, Balance Beam, Tug of War, Obstacle Run',
+      'Minimum 2 team members per challenge — rotate freely',
+      'All 4 challenges must be completed for the score to count',
+      'Fastest cumulative time across all 4 wins',
+      'Team cheer counts — loudest support earns a 5pt bonus',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 1st', pts: 100 },
+      { place: '🥈 2nd', pts: 70 },
+      { place: '🥉 3rd', pts: 50 },
+      { place: 'Loudest crowd', pts: 5 },
+    ],
+  },
+  u4: {
+    emoji: '♟️',
+    format: 'Head-to-Head · Debate Format',
+    duration: '60 min',
+    color: '#7A5CFF',
+    rules: [
+      'Topic revealed 10 minutes before start — no prior preparation',
+      '2 speakers per team, 3 minutes each for opening argument',
+      '90-second rebuttals allowed',
+      'Audience team members may submit one written challenge card',
+      'Judged on: Logic (40%), Delivery (30%), Creativity (30%)',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 Winner', pts: 120 },
+      { place: '🥈 Runner-up', pts: 80 },
+      { place: 'Best argument', pts: 20 },
+    ],
+  },
+  u5: {
+    emoji: '💡',
+    format: 'No-Code Build + Pitch',
+    duration: '2 hrs 20 min',
+    color: '#FFE600',
+    rules: [
+      'Tools allowed: Notion, Airtable, Glide, Webflow, Zapier, or similar',
+      'Must solve a real workplace problem — no toy demos',
+      '2-hour build window. Clock starts simultaneously for all teams',
+      '2-minute pitch, no slides, live demo required',
+      'Judged on: Usefulness (40%), Creativity (35%), Effort (25%)',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 1st', pts: 150 },
+      { place: '🥈 2nd', pts: 100 },
+      { place: '🥉 3rd', pts: 70 },
+      { place: 'Most creative use', pts: 30 },
+    ],
+  },
+  u6: {
+    emoji: '🏆',
+    format: 'Multi-Round Championship · All Teams',
+    duration: '3 hours',
+    color: '#F59E0B',
+    rules: [
+      'Three rounds: Knowledge Blitz (30 min) → Strategy Crunch (45 min) → Physical Finale (30 min)',
+      'All teams compete in every round — no elimination',
+      'Season performance multiplier applied (top team = 1.2×)',
+      'Points from all three rounds aggregated for final ranking',
+      'Season 2 Champion crowned at the ceremony post-event',
+    ],
+    pointsBreakdown: [
+      { place: '🥇 Champion', pts: 200 },
+      { place: '🥈 2nd', pts: 150 },
+      { place: '🥉 3rd', pts: 100 },
+      { place: '4th–6th', pts: 50 },
+    ],
+  },
+  // ── Past ──────────────────────────────────────────────────────────────────
+  p1: {
+    emoji: '🧠',
+    format: 'Quiz · All Teams',
+    duration: '30 min',
+    color: '#7A5CFF',
+    rules: ['30 rapid-fire questions', '+5 correct, −2 wrong', 'No conferring'],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    winner: 'Team Titans',
+    winnerLogo: '⚡',
+  },
+  p2: {
+    emoji: '🔐',
+    format: 'Digital Escape Room',
+    duration: '45 min',
+    color: '#00E5FF',
+    rules: ['5 rooms', 'One hint per room', 'Fastest wins'],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    winner: 'Team Phoenix',
+    winnerLogo: '🔥',
+  },
+  p3: {
+    emoji: '🏃',
+    format: 'Outdoor Relay',
+    duration: '60 min',
+    color: '#00FFC6',
+    rules: ['4 relay legs', 'Fastest cumulative time wins'],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    winner: 'Team Warriors',
+    winnerLogo: '⚔️',
+  },
+  p4: {
+    emoji: '♟️',
+    format: 'Strategy Board',
+    duration: '45 min',
+    color: '#FF2E88',
+    rules: ['Real-time strategy rounds', 'Elimination bracket'],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    winner: 'Team Titans',
+    winnerLogo: '⚡',
+  },
+  p5: {
+    emoji: '💻',
+    format: '4-Hour Hackathon',
+    duration: '4 hours',
+    color: '#FFE600',
+    rules: ['Any language/tool', '5-min demo pitch', 'Live judge panel'],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 150 }],
+    winner: 'Team Mavericks',
+    winnerLogo: '🦅',
+  },
+};
+
+// ─── Past puzzles (for PuzzlesView history) ──────────────────────────────────
+
+export interface PastPuzzle {
+  id: string;
+  question: string;
+  answer: string;
+  hint: string;
+  points: number;
+  solvedBy: string;
+  solvedByLogo: string;
+  date: string;
+}
+
+export const mockPastPuzzles: PastPuzzle[] = [
+  {
+    id: 'ppz1',
+    question: 'What has keys but no locks, space but no room, and you can enter but you cannot go inside?',
+    answer: 'A keyboard',
+    hint: 'You use it every day at work.',
+    points: 40,
+    solvedBy: 'Team Phoenix',
+    solvedByLogo: '🔥',
+    date: '2026-03-06',
+  },
+  {
+    id: 'ppz2',
+    question: 'The more you take, the more you leave behind. What am I?',
+    answer: 'Footsteps',
+    hint: 'Think about movement.',
+    points: 35,
+    solvedBy: 'Team Titans',
+    solvedByLogo: '⚡',
+    date: '2026-03-06',
+  },
+  {
+    id: 'ppz3',
+    question: 'I have cities but no houses, mountains but no trees, and water but no fish. What am I?',
+    answer: 'A map',
+    hint: 'It helps you find your way.',
+    points: 60,
+    solvedBy: 'Team Mavericks',
+    solvedByLogo: '🦅',
+    date: '2026-02-27',
+  },
+];
 
 export const mockManagedEvents: ManagedEvent[] = [
   { id: 'me1', type: 'Quiz',     title: 'Quiz Battle Royale',    date: '2026-03-20', description: 'Fast-paced quiz showdown', status: 'scheduled', topic: 'General Knowledge', numQuestions: '20', difficulty: 'Medium' } as QuizEvent,

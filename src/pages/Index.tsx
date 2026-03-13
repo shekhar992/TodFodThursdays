@@ -3,7 +3,6 @@ import { ArenaProvider } from "@/context/ArenaContext";
 import { PlayerDashboard } from "@/components/player/PlayerDashboard";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SpinnerPage } from "@/components/player/SpinnerPage";
-import { TeamView } from "@/components/player/TeamView";
 import { LoginPage } from "@/components/LoginPage";
 import { SignUpPage } from "@/components/SignUpPage";
 import { useAuth } from "@/context/AuthContext";
@@ -92,10 +91,9 @@ const Index = () => {
       return <SpinnerPage />;
     }
 
-    // Player: has team → team view + player dashboard
+    // Player: has team → player dashboard
     return (
       <ArenaProvider>
-        <TeamView />
         <PlayerDashboard />
         <Button
           variant="outline"
@@ -113,11 +111,9 @@ const Index = () => {
   // ── Not logged in → public player dashboard with auth buttons ─────────
   return (
     <ArenaProvider>
-      <PlayerDashboard />
-
-      {/* Mock mode switcher — visible only when VITE_MOCK_MODE=true */}
+      {/* Mock mode switcher — flows above nav so it never covers it */}
       {isMockMode && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber/90 text-black text-xs px-4 py-1.5 flex items-center justify-between">
+        <div className="relative z-[70] bg-amber-400 text-black text-xs px-4 py-1.5 flex items-center justify-between shadow-sm">
           <span className="font-bold">🧪 Mock Mode</span>
           <div className="flex gap-2">
             <button
@@ -141,6 +137,8 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      <PlayerDashboard />
 
       {/* Auth buttons — hidden in mock mode (use the banner instead) */}
       {!isMockMode && (

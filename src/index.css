@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,40 +6,41 @@
 
 @layer base {
   :root {
-    --background: 216 28% 7%;
-    --foreground: 0 0% 100%;
+    --background: 248 32% 7%;
+    --foreground: 45 20% 96%;
 
-    --card: 219 33% 11%;
-    --card-foreground: 0 0% 100%;
+    --card: 248 28% 11%;
+    --card-foreground: 45 20% 96%;
 
-    --popover: 219 33% 11%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 248 28% 11%;
+    --popover-foreground: 45 20% 96%;
 
-    --primary: 199 89% 60%;
-    --primary-foreground: 216 28% 7%;
+    --primary: 43 93% 60%;
+    --primary-foreground: 248 32% 7%;
 
-    --secondary: 219 33% 16%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 248 25% 16%;
+    --secondary-foreground: 45 20% 96%;
 
-    --muted: 219 33% 16%;
-    --muted-foreground: 240 4% 66%;
+    --muted: 248 25% 16%;
+    --muted-foreground: 248 15% 60%;
 
-    --accent: 219 33% 20%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 248 25% 20%;
+    --accent-foreground: 45 20% 96%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 219 20% 18%;
-    --input: 219 20% 18%;
-    --ring: 199 89% 60%;
+    --border: 248 18% 20%;
+    --input: 248 18% 20%;
+    --ring: 43 93% 60%;
 
     --radius: 0.5rem;
 
     --gold: 43 93% 60%;
-    --gold-foreground: 216 28% 7%;
+    --gold-foreground: 248 32% 7%;
     --amber: 38 92% 50%;
-    --amber-foreground: 216 28% 7%;
+    --amber-foreground: 248 32% 7%;
+    --magenta: 288 80% 62%;
 
     --sidebar-background: 219 33% 9%;
     --sidebar-foreground: 240 4% 66%;
@@ -51,6 +52,7 @@
     --sidebar-ring: 38 92% 50%;
 
     --font-display: 'Space Grotesk', sans-serif;
+    --font-carnival: 'Alfa Slab One', serif;
     --font-body: 'Inter', sans-serif;
   }
 }
@@ -62,6 +64,10 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    background-image:
+      radial-gradient(ellipse 70% 30% at 50% 0%, hsl(43 93% 60% / 0.10) 0%, transparent 65%),
+      radial-gradient(ellipse 35% 25% at 90% 20%, hsl(288 80% 62% / 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 35% 25% at 10% 20%, hsl(38 92% 50% / 0.08) 0%, transparent 60%);
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -72,7 +78,29 @@
   .font-display {
     font-family: var(--font-display);
   }
+  .font-carnival {
+    font-family: var(--font-carnival);
+  }
   .font-body {
     font-family: var(--font-body);
   }
+  .animate-flicker-gold {
+    animation: flicker-gold 4s ease-in-out 1s infinite;
+  }
+}
+
+@keyframes flicker-gold {
+  0%, 88%, 91%, 94%, 100% { opacity: 1; }
+  89%, 92% { opacity: 0.35; }
+  90%, 93% { opacity: 0.85; }
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes callout-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
 }

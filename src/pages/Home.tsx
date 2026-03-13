@@ -1,21 +1,20 @@
 import { useState } from 'react';
-import { PlayerHeader } from '../components/player/PlayerHeader';
+import { PlayerHeader, PlayerView } from '../components/player/PlayerHeader';
 import { ChallengeBanner } from '../components/player/ChallengeBanner';
 import { LiveStandings } from '../components/player/LiveStandings';
-import { UpcomingEvents } from '../components/player/UpcomingEvents';
-import { PastEvents } from '../components/player/PastEvents';
+import { SeasonTimeline } from '../components/player/SeasonTimeline';
 import { PuzzleModal } from '../components/player/PuzzleModal';
 
 export function Home() {
   const [puzzleOpen, setPuzzleOpen] = useState(false);
+  const [activeView, setActiveView] = useState<PlayerView>('dashboard');
 
   return (
     <div className="min-h-screen bg-background">
-      <PlayerHeader />
+      <PlayerHeader activeView={activeView} onViewChange={setActiveView} />
       <ChallengeBanner onOpen={() => setPuzzleOpen(true)} />
       <LiveStandings />
-      <UpcomingEvents />
-      <PastEvents />
+      <SeasonTimeline onViewEvents={() => setActiveView('events')} />
       <PuzzleModal open={puzzleOpen} onClose={() => setPuzzleOpen(false)} />
     </div>
   );

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useArena } from "@/context/ArenaContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Pencil, Plus, RefreshCw, Trash2, Users, Check, X } from "lucide-react";
+import { Loader2, Pencil, Plus, RefreshCw, Trash2, Users, Check, X, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { mockTeams } from "@/data/mockData";
 
@@ -26,6 +27,7 @@ const PRESET_COLORS = [
 const PRESET_EMOJIS = ['⚡', '🔥', '🦅', '⚔️', '🌀', '🔗', '🏆', '💎', '🚀', '🐉', '🦁', '🌊'];
 
 export function AdminTeams() {
+  const { events } = useArena();
   const [teams, setTeams] = useState<Team[]>([]);
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -292,59 +294,90 @@ export function AdminTeams() {
                   </div>
                 ) : (
                   /* ── View mode ── */
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Rank */}
-                      <span className="text-[10px] text-muted-foreground w-4 shrink-0">#{i + 1}</span>
-                      {/* Logo + name */}
-                      <span className="text-xl shrink-0">{team.logo}</span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{team.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Users className="h-2.5 w-2.5" />{members} member{members !== 1 ? 's' : ''}
-                          </span>
-                          <span
-                            className="inline-block w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: team.color }}
-                          />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Rank */}
+                        <span className="text-[10px] text-muted-foreground w-4 shrink-0">#{i + 1}</span>
+                        {/* Logo + name */}
+                        <span className="text-xl shrink-0">{team.logo}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{team.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Users className="h-2.5 w-2.5" />{members} member{members !== 1 ? 's' : ''}
+                            </span>
+                            <span
+                              className="inline-block w-2.5 h-2.5 rounded-full"
+                              style={{ backgroundColor: team.color }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-right">
-                        <p className="text-sm font-bold tabular-nums" style={{ color: team.color }}>
-                          {team.score.toLocaleString()}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">pts</p>
+                      {/* Stats */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-sm font-bold tabular-nums" style={{ color: team.color }}>
+                            {team.score.toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">pts</p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] h-5">{team.wins}W</Badge>
                       </div>
-                      <Badge variant="outline" className="text-[10px] h-5">{team.wins}W</Badge>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => { startEdit(team); setShowNew(false); }}
+                          disabled={saving === team.id}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-7 w-7 ${deletingId === team.id ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'}`}
+                          onClick={() => deleteTeam(team)}
+                          disabled={saving === team.id}
+                          title={deletingId === team.id ? "Click again to confirm delete" : "Delete team"}
+                        >
+                          {saving === team.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                        </Button>
+                      </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => { startEdit(team); setShowNew(false); }}
-                        disabled={saving === team.id}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-7 w-7 ${deletingId === team.id ? 'text-destructive bg-destructive/10' : 'text-muted-foreground'}`}
-                        onClick={() => deleteTeam(team)}
-                        disabled={saving === team.id}
-                        title={deletingId === team.id ? "Click again to confirm delete" : "Delete team"}
-                      >
-                        {saving === team.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                      </Button>
-                    </div>
+                    {/* Event wins timeline */}
+                    {(() => {
+                      const wonEvents = events.filter(e => e.winnerTeamId === team.id);
+                      if (wonEvents.length === 0) return null;
+                      return (
+                        <div className="border-t border-border/30 pt-2 space-y-1.5 ml-7">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                            <Trophy className="h-2.5 w-2.5 text-gold" /> Event Wins
+                          </p>
+                          {wonEvents.map(ev => (
+                            <div key={ev.id} className="flex items-center justify-between gap-3 text-xs">
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span className="shrink-0">{ev.emoji || "📅"}</span>
+                                <span className="text-foreground/80 truncate">{ev.title}</span>
+                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="rounded bg-gold/10 px-1.5 py-0.5 text-[10px] font-bold text-gold">+{ev.winnerPoints} pts</span>
+                                {ev.date && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(ev.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

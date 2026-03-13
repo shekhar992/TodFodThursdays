@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isMockMode } from '../lib/mockAuth';
 import type { Database } from '../lib/database.types';
 import { mockTeams } from '../data/mockData';
+
+const useLive = isSupabaseConfigured && !isMockMode;
 
 export type TeamRow = Database['public']['Tables']['teams']['Row'];
 
 export function useTeams() {
   const [teams, setTeams] = useState<TeamRow[]>(() =>
-    isSupabaseConfigured ? [] : (mockTeams as unknown as TeamRow[])
+    useLive ? [] : (mockTeams as unknown as TeamRow[])
   );
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [loading, setLoading] = useState(useLive);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!useLive) return;
 
     // Initial fetch — sorted descending by score
     supabase

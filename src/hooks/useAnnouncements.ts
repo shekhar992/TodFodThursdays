@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isMockMode } from '../lib/mockAuth';
 import type { Database } from '../lib/database.types';
 import { mockAnnouncements } from '../data/mockData';
+
+const useLive = isSupabaseConfigured && !isMockMode;
 
 export type AnnouncementRow = Database['public']['Tables']['announcements']['Row'];
 
 export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>(() =>
-    isSupabaseConfigured ? [] : (mockAnnouncements as unknown as AnnouncementRow[])
+    useLive ? [] : (mockAnnouncements as unknown as AnnouncementRow[])
   );
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [loading, setLoading] = useState(useLive);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!useLive) return;
 
     supabase
       .from('announcements')

@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         display: ['Space Grotesk', 'sans-serif'],
+        carnival: ['Alfa Slab One', 'serif'],
         body: ['Inter', 'sans-serif'],
       },
       colors: {
@@ -58,6 +59,9 @@ export default {
         amber: {
           DEFAULT: "hsl(var(--amber))",
           foreground: "hsl(var(--amber-foreground))",
+        },
+        magenta: {
+          DEFAULT: "hsl(var(--magenta))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isMockMode } from '../lib/mockAuth';
 import type { Database } from '../lib/database.types';
 import { mockHighlightEvents, mockUpcomingEvents } from '../data/mockData';
 import type { Event } from '../data/mockData';
+
+const useLive = isSupabaseConfigured && !isMockMode;
 
 export type EventRow = Database['public']['Tables']['events']['Row'];
 
@@ -22,12 +25,12 @@ function rowToEvent(row: EventRow): Event {
 
 export function useEvents() {
   const [highlightEvents, setHighlightEvents] = useState<Event[]>(() =>
-    isSupabaseConfigured ? [] : mockHighlightEvents
+    useLive ? [] : mockHighlightEvents
   );
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>(() =>
-    isSupabaseConfigured ? [] : mockUpcomingEvents
+    useLive ? [] : mockUpcomingEvents
   );
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [loading, setLoading] = useState(useLive);
   const [error, setError] = useState<string | null>(null);
 
   function splitEvents(rows: EventRow[]) {
@@ -42,7 +45,7 @@ export function useEvents() {
   }
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!useLive) return;
 
     supabase
       .from('events')

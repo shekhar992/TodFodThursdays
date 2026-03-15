@@ -200,9 +200,27 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     }
   }, [rawPuzzle]);
 
-  // ── Load completed puzzle history from Supabase on mount ──────────────
+  // ── Load completed puzzle history + subscribe to new entries ──────────
   useEffect(() => {
     if (!isSupabaseConfigured || isMockMode) return;
+
+    function rowToCompleted(r: any): CompletedPuzzle {
+      return {
+        id: r.id,
+        question: r.question,
+        answer: r.answer,
+        points: r.points,
+        awardedPoints: r.awarded_points ?? undefined,
+        solvedBy: r.solved_by ?? undefined,
+        solvedByLogo: r.solved_by_logo ?? undefined,
+        solvedByPlayer: r.solved_by_player ?? undefined,
+        solvedByTeamId: r.solved_by_team_id ?? undefined,
+        completedAt: new Date(r.completed_at).getTime(),
+        timedOut: r.timed_out,
+      };
+    }
+
+    // Initial fetch
     supabase
       .from('completed_puzzles')
       .select('*')
@@ -210,22 +228,26 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       .limit(50)
       .then(({ data, error }) => {
         if (error) { console.error('[Supabase] completed_puzzles fetch:', error.message); return; }
-        if (data && data.length > 0) {
-          setCompletedPuzzles(data.map(r => ({
-            id: r.id,
-            question: r.question,
-            answer: r.answer,
-            points: r.points,
-            awardedPoints: r.awarded_points ?? undefined,
-            solvedBy: r.solved_by ?? undefined,
-            solvedByLogo: r.solved_by_logo ?? undefined,
-            solvedByPlayer: r.solved_by_player ?? undefined,
-            solvedByTeamId: r.solved_by_team_id ?? undefined,
-            completedAt: new Date(r.completed_at).getTime(),
-            timedOut: r.timed_out,
-          })));
-        }
+        if (data && data.length > 0) setCompletedPuzzles(data.map(rowToCompleted));
       });
+
+    // Realtime: pick up new rows written by any client (e.g. player solves on their browser)
+    const channel = supabase
+      .channel('completed-puzzles-changes')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'completed_puzzles' },
+        (payload) => {
+          const entry = rowToCompleted(payload.new);
+          setCompletedPuzzles(prev => {
+            // Deduplicate — local writer already prepended it
+            if (prev.some(p => p.id === entry.id)) return prev;
+            return [entry, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // ── Auto-expire puzzle when timer reaches 0 ────────────────────────────

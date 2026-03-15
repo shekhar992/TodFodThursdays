@@ -22,3 +22,6 @@ create policy "Public read completed_puzzles"
 
 create policy "Authenticated write completed_puzzles"
   on public.completed_puzzles for all using (auth.role() = 'authenticated');
+
+-- Enable Realtime so all connected clients receive new rows instantly
+alter publication supabase_realtime add table public.completed_puzzles;

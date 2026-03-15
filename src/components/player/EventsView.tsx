@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useArena } from "@/context/ArenaContext";
 import { categoryColors } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, Trophy, ChevronDown, ChevronUp, Images } from "lucide-react";
+import { Calendar, Clock, Trophy, ChevronDown, ChevronUp, Images, Lock } from "lucide-react";
 
 interface EventCardProps {
   id: string;
@@ -144,6 +144,37 @@ function UpcomingEventCard({ title, category, date, description, emoji, format, 
   );
 }
 
+function ComingSoonCard({ title, category, date, emoji }: EventCardProps) {
+  const accentColor = (categoryColors as Record<string, string>)[category] ?? "hsl(38 92% 50%)";
+  return (
+    <div className="relative rounded-xl border bg-card/50 overflow-hidden" style={{ borderColor: `${accentColor}18` }}>
+      <div className="h-1 w-full opacity-25" style={{ background: accentColor }} />
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl opacity-25">{emoji || "🎯"}</span>
+            <div>
+              <span className="mb-1 inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest opacity-40"
+                style={{ background: `${accentColor}18`, color: accentColor }}>
+                {category}
+              </span>
+              <h3 className="text-base font-semibold text-foreground/35 leading-tight">{title}</h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground/40 shrink-0">
+            <Calendar className="h-3 w-3" />
+            {formatDate(date)}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-border/25 bg-muted/20 px-3 py-2.5">
+          <Lock className="h-3 w-3 text-muted-foreground/35 shrink-0" />
+          <span className="text-xs text-muted-foreground/45">Details revealed closer to the date</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeamLogo, winnerPoints, results = [], memories = [] }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const accentColor = (categoryColors as Record<string, string>)[category] ?? "hsl(38 92% 50%)";
@@ -271,6 +302,9 @@ export function EventsView() {
     .filter(e => !e.isPast && !e.hidden)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const nextEvent = upcoming[0] ?? null;
+  const restEvents = upcoming.slice(1);
+
   const past = [...events]
     .filter(e => e.isPast)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -300,29 +334,43 @@ export function EventsView() {
             </span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((event, i) => {
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <UpcomingEventCard
-                    id={event.id}
-                    title={event.title}
-                    category={event.category}
-                    date={event.date}
-                    description={event.description}
-                    emoji={event.emoji}
-                    format={event.format}
-                    duration={event.duration}
-                    rules={event.rules}
-                    pointsBreakdown={event.pointsBreakdown}
-                  />
-                </motion.div>
-              );
-            })}
+            {nextEvent && (
+              <motion.div
+                key={nextEvent.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0 }}
+              >
+                <UpcomingEventCard
+                  id={nextEvent.id}
+                  title={nextEvent.title}
+                  category={nextEvent.category}
+                  date={nextEvent.date}
+                  description={nextEvent.description}
+                  emoji={nextEvent.emoji}
+                  format={nextEvent.format}
+                  duration={nextEvent.duration}
+                  rules={nextEvent.rules}
+                  pointsBreakdown={nextEvent.pointsBreakdown}
+                />
+              </motion.div>
+            )}
+            {restEvents.map((event, i) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (i + 1) * 0.05 }}
+              >
+                <ComingSoonCard
+                  id={event.id}
+                  title={event.title}
+                  category={event.category}
+                  date={event.date}
+                  emoji={event.emoji}
+                />
+              </motion.div>
+            ))}
           </div>
         </section>
       )}

@@ -27,6 +27,7 @@ export function PuzzleModal({ open, onClose }: Props) {
   const [answer, setAnswer] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [error, setError] = useState(false);
+  const [dismissIn, setDismissIn] = useState<number | null>(null);
 
   const myTeamId = profile?.team_id ?? "";
   const teamAlreadySolved = myTeamId !== "" && solvedTeams.includes(myTeamId);
@@ -55,6 +56,17 @@ export function PuzzleModal({ open, onClose }: Props) {
     if (open) document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
+
+  // Auto-dismiss solved screen after 5 seconds
+  useEffect(() => {
+    if (!solvedState) { setDismissIn(null); return; }
+    setDismissIn(5);
+    const id = setInterval(() => {
+      setDismissIn(prev => (prev !== null && prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [solvedState]);
+  useEffect(() => { if (dismissIn === 0) onClose(); }, [dismissIn, onClose]);
 
   const handleSubmit = useCallback(() => {
     if (!activePuzzle) return;
@@ -143,6 +155,11 @@ export function PuzzleModal({ open, onClose }: Props) {
                 >
                   Close
                 </button>
+                {dismissIn !== null && dismissIn > 0 && (
+                  <p className="text-[11px] text-muted-foreground/50 tabular-nums">
+                    Closing in 0:{String(dismissIn).padStart(2, "0")}
+                  </p>
+                )}
               </div>
 
             ) : teamAlreadySolved ? (

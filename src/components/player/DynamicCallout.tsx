@@ -3,7 +3,7 @@ import { useArena } from "@/context/ArenaContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePuzzleTimer, formatCountdown } from "@/hooks/usePuzzleTimer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Calendar, Clock } from "lucide-react";
+import { Zap, Calendar, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Props {
   onOpenPuzzle: () => void;
@@ -14,6 +14,12 @@ function fmtScheduled(ms: number) {
     month: "short", day: "numeric",
     hour: "numeric", minute: "2-digit", hour12: true,
   });
+}
+
+function isToday(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
 export function DynamicCallout({ onOpenPuzzle }: Props) {
@@ -30,6 +36,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
     activePuzzle.scheduledFor - Date.now() <= SCHEDULE_REVEAL_MS
   );
   const [schedSecsLeft, setSchedSecsLeft] = useState<number>(0);
+  const [dayOfExpanded, setDayOfExpanded] = useState(false);
   useEffect(() => {
     if (!isScheduledPending || !activePuzzle?.scheduledFor) return;
     const tick = () => setSchedSecsLeft(Math.max(0, Math.ceil((activePuzzle.scheduledFor! - Date.now()) / 1000)));
@@ -310,6 +317,121 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                       </span>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : nextEvent && isToday(nextEvent.date) ? (
+          /* ── Day-of: compact card with collapsible details ── */
+          <motion.div
+            key="next-event-today"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div
+              className="relative overflow-hidden rounded-2xl p-px"
+              style={{ background: "linear-gradient(135deg, hsl(43 93% 60% / 0.8), hsl(288 80% 62% / 0.5) 50%, hsl(43 93% 60% / 0.4))" }}
+            >
+              <div className="relative overflow-hidden rounded-2xl bg-[hsl(248_32%_9%)] px-6 py-5">
+                <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 80% at 0% 50%, hsl(43 93% 60% / 0.07) 0%, transparent 70%)" }} />
+                <div className="relative">
+                  {/* Compact header row */}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl"
+                        style={{ background: "hsl(43 93% 60% / 0.12)", border: "1px solid hsl(43 93% 60% / 0.3)", boxShadow: "0 0 20px hsl(43 93% 60% / 0.2)" }}>
+                        {nextEvent!.emoji || "📅"}
+                      </div>
+                      <div>
+                        <div className="mb-1 flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-gold">🎉 Today</span>
+                          <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                            style={{ background: "hsl(43 93% 60% / 0.12)", color: "hsl(43 93% 70%)", border: "1px solid hsl(43 93% 60% / 0.25)" }}>
+                            {nextEvent!.category}
+                          </span>
+                        </div>
+                        <p className="font-carnival text-xl text-foreground tracking-wide leading-tight">{nextEvent!.title}</p>
+                        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                          <Calendar className="h-3 w-3 text-gold/60" />
+                          <span className="text-foreground/60">
+                            {new Date(nextEvent!.date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                          </span>
+                          {nextEvent!.duration && (
+                            <><span className="text-border/60">·</span><span>{nextEvent!.duration}</span></>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {nextEvent!.pointsBreakdown?.[0]?.pts && (
+                        <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
+                          style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>
+                          <span className="font-carnival text-lg font-bold text-gold tabular-nums leading-none">{nextEvent!.pointsBreakdown[0].pts}</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-gold/60 mt-0.5">pts to win</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => setDayOfExpanded(v => !v)}
+                        className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-colors"
+                        style={{ background: "hsl(43 93% 60% / 0.10)", border: "1px solid hsl(43 93% 60% / 0.25)", color: "hsl(43 93% 70%)" }}
+                      >
+                        {dayOfExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        {dayOfExpanded ? "Hide details" : "View details"}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Collapsible details */}
+                  <AnimatePresence initial={false}>
+                    {dayOfExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-5 grid gap-6 border-t pt-5 sm:grid-cols-2" style={{ borderColor: "hsl(43 93% 60% / 0.15)" }}>
+                          <div>
+                            {nextEvent!.format && (
+                              <span className="mb-2 inline-block rounded-full bg-accent/50 px-2.5 py-0.5 text-xs text-muted-foreground">{nextEvent!.format}</span>
+                            )}
+                            {nextEvent!.description && (
+                              <p className="text-xs text-muted-foreground/80 leading-relaxed mb-3">{nextEvent!.description}</p>
+                            )}
+                            {nextEvent!.rules?.length > 0 && (
+                              <>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Rules</p>
+                                <ul className="space-y-1.5">
+                                  {nextEvent!.rules.map((rule, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-xs text-foreground/80 leading-relaxed">
+                                      <span className="mt-0.5 shrink-0 text-[10px] font-bold text-gold/70">{String(i + 1).padStart(2, "0")}</span>
+                                      {rule}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
+                          </div>
+                          {nextEvent!.pointsBreakdown?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Points</p>
+                              <div className="flex flex-wrap gap-2">
+                                {nextEvent!.pointsBreakdown.map((row, i) => (
+                                  <div key={i} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
+                                    style={{ borderColor: "hsl(43 93% 60% / 0.25)", background: "hsl(43 93% 60% / 0.08)" }}>
+                                    <span>{row.place}</span>
+                                    <span className="font-bold text-gold">+{row.pts} pts</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>

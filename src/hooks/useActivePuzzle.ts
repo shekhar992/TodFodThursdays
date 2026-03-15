@@ -17,6 +17,11 @@ function rowToPuzzle(row: PuzzleRow): Puzzle {
     answer: row.answer,
     points: row.points,
     isActive: row.is_active,
+    timeLimit: (row as any).time_limit ?? 60,
+    scheduledFor: (row as any).scheduled_for ? new Date((row as any).scheduled_for).getTime() : undefined,
+    timerRunning: (row as any).timer_running ?? false,
+    startedAt: (row as any).started_at ? new Date((row as any).started_at).getTime() : undefined,
+    expiresAt: (row as any).expires_at ? new Date((row as any).expires_at).getTime() : undefined,
   };
 }
 

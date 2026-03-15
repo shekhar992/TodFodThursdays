@@ -38,6 +38,11 @@ type PuzzlesRow = {
   answer: string;
   points: number;
   is_active: boolean;
+  time_limit: number;          // seconds
+  scheduled_for: string | null; // ISO timestamp
+  timer_running: boolean;
+  started_at: string | null;   // ISO timestamp
+  expires_at: string | null;   // ISO timestamp
   created_at: string;
 };
 

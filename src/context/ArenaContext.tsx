@@ -272,6 +272,11 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
           supabase.from("puzzles").upsert({
             id, question: puzzle.question, hint: puzzle.hint || "",
             answer: puzzle.answer, points: puzzle.points, is_active: true,
+            time_limit: puzzle.timeLimit,
+            scheduled_for: puzzle.scheduledFor ? new Date(puzzle.scheduledFor).toISOString() : null,
+            timer_running: false,
+            started_at: null,
+            expires_at: null,
           }).then(({ error }) => { if (error) console.error("[Supabase] launchPuzzle:", error.message); });
         });
     }
@@ -281,7 +286,18 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     setActivePuzzle(prev => {
       if (!prev) return prev;
       const startedAt = Date.now();
-      return { ...prev, timerRunning: true, startedAt, expiresAt: startedAt + prev.timeLimit * 1000 };
+      const expiresAt = startedAt + prev.timeLimit * 1000;
+      const updated = { ...prev, timerRunning: true, startedAt, expiresAt };
+      // Persist timer state to Supabase so all clients see it live
+      if (isSupabaseConfigured) {
+        supabase.from("puzzles").update({
+          timer_running: true,
+          started_at: new Date(startedAt).toISOString(),
+          expires_at: new Date(expiresAt).toISOString(),
+        }).eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] startPuzzleTimer:", error.message); });
+      }
+      return updated;
     });
   }, []);
 

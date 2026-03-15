@@ -224,7 +224,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
   // ── Actions ───────────────────────────────────────────────────────────
   const addEvent = useCallback((event: Omit<ArenaEvent, "id">) => {
-    const id = `e-${Date.now()}`;
+    const id = crypto.randomUUID();
     setEvents(prev => [{ ...event, id }, ...prev]);
     if (isSupabaseConfigured) {
       supabase.from("events").insert({
@@ -258,7 +258,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addAnnouncement = useCallback((text: string) => {
-    const id = `a-${Date.now()}`;
+    const id = crypto.randomUUID();
     setAnnouncements(prev => [{ id, text, timestamp: new Date().toISOString() }, ...prev]);
     if (isSupabaseConfigured) {
       supabase.from("announcements").insert({ id, text, emoji: "📢" })
@@ -271,7 +271,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const launchPuzzle = useCallback((puzzle: Omit<Puzzle, "id" | "timerRunning" | "startedAt" | "expiresAt">) => {
-    const id = `pz-${Date.now()}`;
+    const id = crypto.randomUUID();
     setActivePuzzle({ ...puzzle, id, timerRunning: false });
     setPuzzleSolved(false);
     setSolvedTeams([]);  // fresh puzzle, clear all team lock-outs

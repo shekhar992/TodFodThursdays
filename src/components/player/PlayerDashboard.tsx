@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useArena } from "@/context/ArenaContext";
 import { PlayerHeader, PlayerView } from "@/components/player/PlayerHeader";
 import { AnnouncementTicker } from "@/components/player/AnnouncementTicker";
 import { HeroBanner } from "@/components/player/HeroBanner";
@@ -9,10 +10,14 @@ import { SeasonTimeline } from "@/components/player/SeasonTimeline";
 import { PuzzleModal } from "@/components/player/PuzzleModal";
 import { EventsView } from "@/components/player/EventsView";
 import { PuzzlesView } from "@/components/player/PuzzlesView";
+import { StageView } from "@/components/player/StageView";
 
 export function PlayerDashboard() {
+  const { stageMode } = useArena();
   const [puzzleOpen, setPuzzleOpen] = useState(false);
   const [activeView, setActiveView] = useState<PlayerView>('dashboard');
+
+  if (stageMode) return <StageView />;
 
   return (
     <div className="min-h-screen bg-background">

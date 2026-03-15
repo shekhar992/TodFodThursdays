@@ -12,59 +12,46 @@ interface Props {
 }
 
 export function PuzzleModal({ open, onClose }: Props) {
-  const { activePuzzle, puzzleSolved, solvePuzzle, teams, solvedTeams } = useArena();
+  const { activePuzzle, solvePuzzle, teams, solvedTeams } = useArena();
   const { profile } = useAuth();
+
+  const [solvedState, setSolvedState] = useState<{
+    earnedPts: number;
+    basePts: number;
+    teamName: string;
+    teamLogo: string;
+    playerName: string;
+  } | null>(null);
+
   const secondsLeft = usePuzzleTimer(activePuzzle?.expiresAt, activePuzzle?.timerRunning ?? false);
   const [answer, setAnswer] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [error, setError] = useState(false);
-  const [earnedPoints, setEarnedPoints] = useState(0);
-  const [dismissCountdown, setDismissCountdown] = useState<number | null>(null);
 
-  // Rule 1: is this user's team already locked in?
   const myTeamId = profile?.team_id ?? "";
   const teamAlreadySolved = myTeamId !== "" && solvedTeams.includes(myTeamId);
 
-  // Rule 3: bonus window = first 30s after timer starts
   const elapsedSeconds =
     activePuzzle?.timerRunning && secondsLeft !== null
       ? activePuzzle.timeLimit - secondsLeft
       : null;
-  const inBonusWindow = elapsedSeconds !== null && elapsedSeconds <= 30;
+  const liveMultiplier = Math.max(0.5, 2 - (1.5 * (elapsedSeconds ?? 0) / 60));
+  const timerUrgent = secondsLeft !== null && secondsLeft <= 15;
+  const timerWarning = secondsLeft !== null && secondsLeft > 15 && secondsLeft <= 30;
 
-  const timerUrgent = secondsLeft !== null && secondsLeft <= 30;
-  const timerWarning = secondsLeft !== null && secondsLeft > 30 && secondsLeft <= 60;
-
+  // Reset local state when opening a fresh puzzle
   useEffect(() => {
     if (open) {
       setAnswer("");
       setShowHint(false);
       setError(false);
-      setDismissCountdown(null);
+      setSolvedState(null);
     }
   }, [open, activePuzzle?.id]);
 
-  // Rule 4: 5s auto-dismiss after correct answer
+  // Escape key
   useEffect(() => {
-    if (!puzzleSolved || !open) return;
-    setDismissCountdown(5);
-    const interval = setInterval(() => {
-      setDismissCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(interval);
-          onClose();
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [puzzleSolved, open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     if (open) document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
@@ -73,31 +60,29 @@ export function PuzzleModal({ open, onClose }: Props) {
     if (!activePuzzle) return;
     if (answer.trim().toLowerCase() === activePuzzle.answer.toLowerCase()) {
       const team = teams.find(t => t.id === profile?.team_id);
-      // Compute bonus locally for display (context computes it independently for score)
-      const bonus =
-        activePuzzle.timerRunning &&
-        activePuzzle.startedAt !== undefined &&
-        Date.now() - activePuzzle.startedAt <= 30_000;
-      setEarnedPoints(bonus ? activePuzzle.points * 2 : activePuzzle.points);
+      const elapsedMs = activePuzzle.startedAt ? Date.now() - activePuzzle.startedAt : 0;
+      const mult = Math.max(0.5, 2 - (1.5 * elapsedMs / 1000 / 60));
+      const awardedPts = Math.round((activePuzzle.points * mult) / 10) * 10;
+      // Capture everything BEFORE calling solvePuzzle (which clears activePuzzle)
+      setSolvedState({
+        earnedPts: awardedPts,
+        basePts: activePuzzle.points,
+        teamName: team?.name ?? "Your Team",
+        teamLogo: team?.logo ?? "🏆",
+        playerName: profile?.display_name ?? "Anonymous",
+      });
       solvePuzzle({
         playerName: profile?.display_name ?? "Anonymous",
         teamName: team?.name ?? "Unknown Team",
         teamLogo: team?.logo ?? "?",
         teamId: profile?.team_id ?? "",
       });
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ["#38BDF8", "#F8C03B", "#ffffff"],
-      });
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ["#38BDF8", "#F8C03B", "#ffffff"] });
     } else {
       setError(true);
       setTimeout(() => setError(false), 1500);
     }
   }, [answer, activePuzzle, solvePuzzle, profile, teams]);
-
-  if (!activePuzzle) return null;
 
   return (
     <AnimatePresence>
@@ -115,102 +100,109 @@ export function PuzzleModal({ open, onClose }: Props) {
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={e => e.stopPropagation()}
-            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="font-display text-sm font-bold">Puzzle Challenge</span>
-                {/* Base points */}
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
-                  {activePuzzle.points} PTS
-                </span>
-                {/* Rule 3: bonus window badge */}
-                {inBonusWindow && (
-                  <span className="rounded-full border border-gold/50 bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold animate-pulse">
-                    ⚡ 2× BONUS
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                {activePuzzle.timerRunning && secondsLeft !== null && (
-                  <div className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 ${
-                    timerUrgent ? "border-destructive/50 bg-destructive/10" :
-                    timerWarning ? "border-amber-400/50 bg-amber-400/10" :
-                    "border-gold/30 bg-gold/10"
-                  }`}>
-                    <Clock className={`h-3 w-3 ${
-                      timerUrgent ? "text-destructive animate-pulse" :
-                      timerWarning ? "text-amber-400" : "text-gold"
-                    }`} />
-                    <span className={`font-carnival text-base tabular-nums ${
-                      timerUrgent ? "text-destructive" :
-                      timerWarning ? "text-amber-400" : "text-gold"
-                    }`}>
-                      {formatCountdown(secondsLeft)}
-                    </span>
-                  </div>
-                )}
-                <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* ── Already solved by this team (Rule 1) ── */}
-            {teamAlreadySolved && !puzzleSolved ? (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center gap-3 py-8"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                  <Lock className="h-6 w-6 text-muted-foreground" />
+            {/* ── SOLVED ──────────────────────────────────────── */}
+            {solvedState ? (
+              <div className="relative flex flex-col items-center gap-4 px-8 py-12 text-center">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,hsl(288_80%_62%/0.12),transparent)]" />
+                <div
+                  className="relative flex h-16 w-16 items-center justify-center rounded-full"
+                  style={{ background: "hsl(288 80% 62% / 0.15)", border: "1px solid hsl(288 80% 62% / 0.3)", boxShadow: "0 0 28px hsl(288 80% 62% / 0.3)" }}
+                >
+                  <Check className="h-8 w-8" style={{ color: "hsl(288 80% 72%)" }} />
                 </div>
-                <span className="font-display text-base font-bold">Already Answered</span>
-                <span className="text-sm text-muted-foreground text-center max-w-xs">
-                  Your team already locked in an answer. Only one submission per team counts — sit tight and see how others do!
-                </span>
-              </motion.div>
-            ) : puzzleSolved ? (
-              /* ── Correct! state with 5s auto-dismiss (Rule 4) ── */
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center gap-3 py-8"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
-                  <Check className="h-7 w-7 text-primary" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "hsl(288 80% 72%)" }}>
+                    Puzzle Solved! 🧩
+                  </p>
+                  <p className="font-carnival text-2xl text-foreground tracking-wide">
+                    {solvedState.teamLogo} {solvedState.teamName}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Answered by {solvedState.playerName}
+                  </p>
                 </div>
-                <span className="font-display text-lg font-bold">Correct!</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    +{earnedPoints} points earned for your team
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className="rounded-full px-4 py-1.5 text-sm font-bold"
+                    style={{ background: "hsl(288 80% 62% / 0.12)", color: "hsl(288 80% 72%)", border: "1px solid hsl(288 80% 62% / 0.3)" }}
+                  >
+                    +{solvedState.earnedPts} pts earned
                   </span>
-                  {earnedPoints > (activePuzzle?.points ?? 0) && (
-                    <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">
-                      ⚡ 2× Bonus!
+                  {solvedState.earnedPts > solvedState.basePts && (
+                    <span className="rounded-full bg-gold/15 border border-gold/25 px-3 py-1 text-xs font-bold text-gold">
+                      ⚡ Speed bonus!
                     </span>
                   )}
                 </div>
-                {/* 5s countdown bar */}
-                {dismissCountdown !== null && (
-                  <div className="mt-2 flex flex-col items-center gap-1.5 w-full max-w-[180px]">
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
-                      Closing in {dismissCountdown}s…
-                    </span>
-                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full bg-primary"
-                        initial={{ width: "100%" }}
-                        animate={{ width: "0%" }}
-                        transition={{ duration: dismissCountdown, ease: "linear" }}
-                      />
-                    </div>
+                <button
+                  onClick={onClose}
+                  className="mt-2 rounded-lg px-6 py-2 text-sm font-semibold text-white"
+                  style={{ background: "linear-gradient(135deg, hsl(288 80% 58%), hsl(270 70% 48%))", boxShadow: "0 4px 16px hsl(288 80% 62% / 0.4)" }}
+                >
+                  Close
+                </button>
+              </div>
+
+            ) : teamAlreadySolved ? (
+              /* ── ALREADY ANSWERED ───────────────────────────── */
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-display text-sm font-bold">Puzzle Challenge</span>
+                  <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                    <Lock className="h-6 w-6 text-muted-foreground" />
                   </div>
-                )}
-              </motion.div>
-            ) : (
-              <>
+                  <span className="font-display text-base font-bold">Already Answered</span>
+                  <span className="text-sm text-muted-foreground text-center max-w-xs">
+                    Your team already locked in an answer. Sit tight and see how things shake out!
+                  </span>
+                </div>
+              </div>
+
+            ) : activePuzzle ? (
+              /* ── LIVE PUZZLE ────────────────────────────────── */
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-sm font-bold">Puzzle Challenge</span>
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {activePuzzle.points} PTS
+                    </span>
+                    {activePuzzle.timerRunning && (
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums transition-colors ${
+                        liveMultiplier >= 1.5 ? "border-gold/50 bg-gold/15 text-gold animate-pulse" :
+                        liveMultiplier >= 1.0 ? "border-amber-400/50 bg-amber-400/15 text-amber-400" :
+                        "border-border/50 bg-muted/50 text-muted-foreground"
+                      }`}>
+                        ⚡ {liveMultiplier.toFixed(1)}×
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {activePuzzle.timerRunning && secondsLeft !== null && (
+                      <div className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 ${
+                        timerUrgent ? "border-destructive/50 bg-destructive/10" :
+                        timerWarning ? "border-amber-400/50 bg-amber-400/10" :
+                        "border-gold/30 bg-gold/10"
+                      }`}>
+                        <Clock className={`h-3 w-3 ${timerUrgent ? "text-destructive animate-pulse" : timerWarning ? "text-amber-400" : "text-gold"}`} />
+                        <span className={`font-carnival text-base tabular-nums ${timerUrgent ? "text-destructive" : timerWarning ? "text-amber-400" : "text-gold"}`}>
+                          {formatCountdown(secondsLeft)}
+                        </span>
+                      </div>
+                    )}
+                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
                 <blockquote className="border-l-2 border-primary/30 pl-4 text-sm leading-relaxed text-foreground/90 italic">
                   "{activePuzzle.question}"
                 </blockquote>
@@ -244,9 +236,7 @@ export function PuzzleModal({ open, onClose }: Props) {
                     onChange={e => setAnswer(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleSubmit()}
                     placeholder="Type your answer..."
-                    className={`flex-1 rounded-md border bg-secondary/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors ${
-                      error ? "border-destructive" : "border-border"
-                    }`}
+                    className={`flex-1 rounded-md border bg-secondary/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors ${error ? "border-destructive" : "border-border"}`}
                   />
                   <button
                     onClick={handleSubmit}
@@ -266,7 +256,17 @@ export function PuzzleModal({ open, onClose }: Props) {
                     Incorrect — try again!
                   </motion.p>
                 )}
-              </>
+              </div>
+
+            ) : (
+              /* ── EXPIRED while modal was open ───────────────── */
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <Clock className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-muted-foreground">Time's up — puzzle closed</p>
+                <button onClick={onClose} className="mt-2 rounded-lg border border-border px-5 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Close
+                </button>
+              </div>
             )}
           </motion.div>
         </motion.div>
@@ -274,3 +274,4 @@ export function PuzzleModal({ open, onClose }: Props) {
     </AnimatePresence>
   );
 }
+

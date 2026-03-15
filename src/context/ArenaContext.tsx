@@ -38,6 +38,10 @@ export interface ArenaEvent {
   winnerTeamLogo?: string;
   winnerPoints?: number;
   completedAt?: number;
+  // Event lifecycle
+  status?: 'scheduled' | 'live' | 'completed';
+  results?: { place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string }[];
+  memories?: string[];  // image URLs uploaded by admin
 }
 
 export interface Announcement { id: string; text: string; timestamp: string; }
@@ -48,7 +52,8 @@ export interface Puzzle {
   answer: string;
   points: number;
   hint?: string;
-  timeLimit: number;       // seconds, default 300
+  timeLimit: number;       // seconds, default 60
+  scheduledFor?: number;   // ms timestamp — auto-launch at this time
   startedAt?: number;      // ms timestamp
   expiresAt?: number;      // ms timestamp
   timerRunning: boolean;
@@ -58,10 +63,12 @@ export interface CompletedPuzzle {
   id: string;
   question: string;
   answer: string;
-  points: number;
+  points: number;             // base points
+  awardedPoints?: number;     // actual decayed points awarded
   solvedBy?: string;          // team name
   solvedByLogo?: string;
   solvedByPlayer?: string;    // display name
+  solvedByTeamId?: string;    // team id
   completedAt: number;        // ms timestamp
   timedOut: boolean;
 }
@@ -74,6 +81,7 @@ interface ArenaState {
   completedPuzzles: CompletedPuzzle[];
   puzzleSolved: boolean;
   solvedTeams: string[];   // team IDs that locked in a correct answer for the active puzzle
+  stageMode: boolean;
 }
 
 interface ArenaActions {
@@ -87,14 +95,17 @@ interface ArenaActions {
   stopPuzzleTimer: () => void;
   solvePuzzle: (solver?: { playerName: string; teamName: string; teamLogo: string; teamId: string }) => void;
   updateScore: (teamId: string, delta: number) => void;
+  setStageModeActive: (active: boolean) => void;
 }
 
 const ArenaContext = createContext<(ArenaState & ArenaActions) | null>(null);
 
 const initCompleted: CompletedPuzzle[] = mockPastPuzzles.map(p => ({
   id: p.id, question: p.question, answer: p.answer, points: p.points,
+  awardedPoints: p.awardedPoints,
   solvedBy: p.solvedBy, solvedByLogo: p.solvedByLogo, solvedByPlayer: undefined,
-  completedAt: new Date(p.date).getTime(), timedOut: false,
+  solvedByTeamId: p.solvedByTeamId,
+  completedAt: p.scheduledFor ?? new Date(p.date).getTime(), timedOut: false,
 }));
 
 export function ArenaProvider({ children }: { children: ReactNode }) {
@@ -112,6 +123,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   );
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [solvedTeams, setSolvedTeams] = useState<string[]>([]);
+  const [stageMode, setStageModeActive] = useState(false);
 
   // Stable refs so callbacks don't go stale
   const activePuzzleRef = useRef<Puzzle | null>(null);
@@ -152,6 +164,12 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         winnerTeamLogo: isPast ? d?.winnerLogo : undefined,
         winnerPoints: isPast ? (d?.pointsBreakdown?.[0]?.pts) : undefined,
         completedAt: isPast ? new Date(e.date).getTime() : undefined,
+        status: isPast ? 'completed' : 'scheduled',
+        results: isPast ? (d?.results?.map(r => ({ place: r.place, pts: r.pts, teamName: r.teamName, teamLogo: r.teamLogo })) ?? []) : [],
+        // memories: prefer Supabase image_url, fall back to mock seed images
+        memories: isPast
+          ? [e.image].filter(Boolean).concat(d?.memories ?? []).filter(Boolean) as string[]
+          : undefined,
       };
     };
     const past = highlightEvents.map(e => mapEvent(e, true));
@@ -210,7 +228,16 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateEvent = useCallback((id: string, updates: Partial<Omit<ArenaEvent, "id">>) => {
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    setEvents(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const merged = { ...e, ...updates };
+      // Keep memories in sync if image changes
+      if ('image' in updates && merged.isPast) {
+        const imgs = [merged.image, ...(merged.memories ?? []).slice(1)].filter(Boolean) as string[];
+        merged.memories = imgs;
+      }
+      return merged;
+    }));
   }, []);
 
   const deleteEvent = useCallback((id: string) => {
@@ -258,6 +285,15 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // ── Auto-schedule: start timer when scheduledFor time arrives ──────────
+  useEffect(() => {
+    if (!activePuzzle?.scheduledFor || activePuzzle.timerRunning) return;
+    const msUntil = activePuzzle.scheduledFor - Date.now();
+    if (msUntil <= 0) { startPuzzleTimer(); return; }
+    const timer = setTimeout(startPuzzleTimer, msUntil);
+    return () => clearTimeout(timer);
+  }, [activePuzzle?.id, activePuzzle?.scheduledFor, activePuzzle?.timerRunning, startPuzzleTimer]);
+
   const stopPuzzleTimer = useCallback(() => {
     if (expireTimerRef.current) clearTimeout(expireTimerRef.current);
     const prev = activePuzzleRef.current;
@@ -286,43 +322,43 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const solvePuzzle = useCallback((solver?: { playerName: string; teamName: string; teamLogo: string; teamId: string }) => {
-    // Rule 1: one correct entry per team — silently ignore duplicates
+    // One correct entry per team — silently ignore duplicates
     if (solver?.teamId && solvedTeams.includes(solver.teamId)) return;
 
     if (expireTimerRef.current) clearTimeout(expireTimerRef.current);
     const prev = activePuzzleRef.current;
     if (prev) {
-      // Rule 3: bonus points if solved within first 30s of the timer
-      const inBonusWindow =
-        prev.timerRunning &&
-        prev.startedAt !== undefined &&
-        Date.now() - prev.startedAt <= 30_000;
-      const pointsAwarded = inBonusWindow ? prev.points * 2 : prev.points;
+      // Linear decay: multiplier goes 2.0→0.5 over 60s
+      const elapsed = prev.startedAt ? (Date.now() - prev.startedAt) / 1000 : 0;
+      const multiplier = Math.max(0.5, 2 - (1.5 * elapsed / 60));
+      const awardedPoints = Math.round((prev.points * multiplier) / 10) * 10;
 
       setCompletedPuzzles(h => [{
         id: prev.id, question: prev.question, answer: prev.answer,
-        points: pointsAwarded,           // record actual points awarded (incl. bonus)
+        points: prev.points,             // base points unchanged
+        awardedPoints,                   // decayed actual score
         solvedBy: solver?.teamName, solvedByLogo: solver?.teamLogo,
-        solvedByPlayer: solver?.playerName, completedAt: Date.now(), timedOut: false,
+        solvedByPlayer: solver?.playerName, solvedByTeamId: solver?.teamId,
+        completedAt: Date.now(), timedOut: false,
       }, ...h]);
 
-      // Rule 2: auto-add to scoreboard
+      // Auto-add to scoreboard
       if (solver?.teamId) {
-        updateScore(solver.teamId, pointsAwarded);
+        updateScore(solver.teamId, awardedPoints);
         setSolvedTeams(prev => [...prev, solver!.teamId]);
       }
 
-      // Stop timer but keep activePuzzle alive so "Correct!" modal state works
-      setActivePuzzle({ ...prev, timerRunning: false });
+      // Option A: close puzzle immediately — PuzzleModal caches last puzzle for its success state
+      setActivePuzzle(null);
     }
     setPuzzleSolved(true);
   }, [solvedTeams, updateScore]);
 
   return (
     <ArenaContext.Provider value={{
-      teams, events, announcements, activePuzzle, completedPuzzles, puzzleSolved, solvedTeams,
+      teams, events, announcements, activePuzzle, completedPuzzles, puzzleSolved, solvedTeams, stageMode,
       addEvent, updateEvent, deleteEvent, addAnnouncement, deleteAnnouncement,
-      launchPuzzle, startPuzzleTimer, stopPuzzleTimer, solvePuzzle, updateScore,
+      launchPuzzle, startPuzzleTimer, stopPuzzleTimer, solvePuzzle, updateScore, setStageModeActive,
     }}>
       {children}
     </ArenaContext.Provider>

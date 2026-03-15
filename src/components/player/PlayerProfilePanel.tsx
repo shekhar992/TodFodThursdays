@@ -16,9 +16,10 @@ const RANK_LABEL = ["1st", "2nd", "3rd"];
 
 export function PlayerProfilePanel() {
   const { profile } = useAuth();
-  const { teams, events } = useArena();
+  const { teams, events, completedPuzzles } = useArena();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [membersExpanded, setMembersExpanded] = useState(true);
+  const [detailExpanded, setDetailExpanded] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
@@ -31,6 +32,13 @@ export function PlayerProfilePanel() {
 
   const teamWins = events.filter(
     (e) => e.winnerTeamId === currentTeam?.id || e.winnerTeamName === currentTeam?.name
+  );
+
+  const puzzleWins = completedPuzzles.filter(
+    (p) => !p.timedOut && (
+      (p.solvedByTeamId && p.solvedByTeamId === currentTeam?.id) ||
+      (!p.solvedByTeamId && p.solvedBy === currentTeam?.name)
+    )
   );
 
   const initials = profile?.display_name
@@ -161,9 +169,34 @@ export function PlayerProfilePanel() {
               </div>
             </div>
           </div>
+
+          {/* Expand toggle */}
+          <button
+            onClick={() => setDetailExpanded((e) => !e)}
+            className="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors border-t"
+            style={{ borderColor: teamColor + "20" }}
+          >
+            {detailExpanded ? (
+              <><ChevronUp className="h-3 w-3" /> Hide details</>
+            ) : (
+              <><ChevronDown className="h-3 w-3" /> Show details</>
+            )}
+          </button>
         </div>
 
-        {/* ──────── Screenshot 3: Team card ──────── */}
+        <AnimatePresence initial={false}>
+        {detailExpanded && (
+        <motion.div
+          key="detail"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          style={{ overflow: "hidden" }}
+          className="flex flex-col gap-3"
+        >
+
+        {/* ──────── Team card ──────── */}
         <div
           className="rounded-2xl border overflow-hidden"
           style={{
@@ -312,6 +345,48 @@ export function PlayerProfilePanel() {
             </div>
           </div>
         )}
+
+        {/* ──────── Puzzle wins card ──────── */}
+        {puzzleWins.length > 0 && (
+          <div className="rounded-2xl border border-[hsl(288_80%_62%/0.2)] bg-[hsl(288_80%_62%/0.05)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[hsl(288_80%_62%/0.15)] flex items-center gap-2">
+              <span className="text-base leading-none">🧩</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(288_80%_72%)]">
+                Puzzle Wins
+              </span>
+            </div>
+            <div className="px-4 py-3 flex flex-col gap-2">
+              {puzzleWins.slice(0, 4).map((pz, i) => (
+                <motion.div
+                  key={pz.id}
+                  initial={{ x: -6, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="flex items-start gap-2.5"
+                >
+                  <span className="text-base leading-none shrink-0 mt-0.5">{pz.solvedByLogo ?? "🏆"}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-medium truncate text-foreground italic">"{pz.question.length > 40 ? pz.question.slice(0, 40) + "…" : pz.question}"</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-[hsl(288_80%_72%)] tabular-nums font-bold">+{pz.awardedPoints ?? pz.points} pts</span>
+                      <span className="text-border/60 text-[9px]">·</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(pz.completedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              {puzzleWins.length > 4 && (
+                <span className="text-[10px] text-muted-foreground">+{puzzleWins.length - 4} more puzzle wins</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        </motion.div>
+        )}
+        </AnimatePresence>
       </div>
     </>
   );

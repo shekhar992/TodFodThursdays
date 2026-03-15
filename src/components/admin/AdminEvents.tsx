@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useArena, ArenaEvent, Team } from "@/context/ArenaContext";
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, X, ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, X, ChevronDown, ChevronUp, Trophy, Play, Square, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { categoryColors } from "@/data/mockData";
 import { EmojiPicker } from "./EmojiPicker";
@@ -9,13 +9,14 @@ import { MediaUploader } from "./MediaUploader";
 const CATEGORIES = ["Adventure", "Puzzle", "Physical", "Strategy", "Tech", "Trivia", "Grand Finale"];
 
 type FormData = Omit<ArenaEvent, "id">;
+type ResultEntry = { place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string };
 
 function emptyForm(): FormData {
   return {
     title: "", category: "Adventure", date: "", description: "",
     isPast: false, emoji: "📅", format: "", duration: "",
     rules: [""], pointsBreakdown: [{ place: "🥇 1st", pts: 100 }, { place: "🥈 2nd", pts: 70 }, { place: "🥉 3rd", pts: 50 }],
-    hidden: false, image: "",
+    hidden: false, image: "", status: 'scheduled', results: [],
   };
 }
 
@@ -153,37 +154,98 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
   );
 }
 
-function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onMarkComplete }: {
+function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, onEndEvent, onMarkComplete }: {
   event: ArenaEvent;
   teams: Team[];
   onEdit: () => void;
   onDelete: () => void;
   onToggleHidden: () => void;
-  onMarkComplete: (teamId: string, teamName: string, teamLogo: string, points: number) => void;
+  onGoLive: () => void;
+  onEndEvent: () => void;
+  onMarkComplete: (results: ResultEntry[]) => void;
 }) {
   const [confirmDel, setConfirmDel] = useState(false);
-  const [showComplete, setShowComplete] = useState(false);
-  const [winTeamId, setWinTeamId] = useState(event.winnerTeamId ?? "");
-  const [winPoints, setWinPoints] = useState(String(event.winnerPoints ?? (event.pointsBreakdown[0]?.pts ?? 100)));
-  const color = categoryColors[event.category] ?? "#888";
+  const [showResults, setShowResults] = useState(false);
 
-  function applyWinner() {
-    const team = teams.find(t => t.id === winTeamId);
-    if (!team) return;
-    onMarkComplete(team.id, team.name, team.logo, Number(winPoints) || 0);
-    setShowComplete(false);
+  // Per-team points map: teamId → pts string
+  const [ptsMap, setPtsMap] = useState<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    teams.forEach(t => { m[t.id] = "0"; });
+    // Pre-fill from existing results
+    event.results?.forEach(r => { if (r.teamId) m[r.teamId] = String(r.pts); });
+    return m;
+  });
+
+  const color = categoryColors[event.category] ?? "#888";
+  const isLive      = event.status === 'live';
+  const isCompleted = event.status === 'completed' || (event.isPast && event.status !== 'live');
+  const isScheduled = !isLive && !isCompleted;
+  const alreadyHasResults = event.results?.some(r => r.teamId);
+
+  function handleEnd() {
+    onEndEvent();
+    // Reset pts map fresh from any prior results when panel opens
+    const fresh: Record<string, string> = {};
+    teams.forEach(t => { fresh[t.id] = "0"; });
+    event.results?.forEach(r => { if (r.teamId) fresh[r.teamId] = String(r.pts); });
+    setPtsMap(fresh);
+    setShowResults(true);
   }
-  function clearWinner() {
-    onMarkComplete("", "", "", 0);
-    setWinTeamId("");
-    setShowComplete(false);
+
+  function handleOpenResults() {
+    const fresh: Record<string, string> = {};
+    teams.forEach(t => { fresh[t.id] = "0"; });
+    event.results?.forEach(r => { if (r.teamId) fresh[r.teamId] = String(r.pts); });
+    setPtsMap(fresh);
+    setShowResults(v => !v);
   }
+
+  function quickFill() {
+    const sorted = [...teams].sort((a, b) => b.score - a.score);
+    const fresh: Record<string, string> = {};
+    teams.forEach(t => { fresh[t.id] = "0"; });
+    event.pointsBreakdown.forEach((row, i) => {
+      const team = sorted[i];
+      if (team) fresh[team.id] = String(row.pts);
+    });
+    setPtsMap(fresh);
+  }
+
+  function confirmResults() {
+    const results: ResultEntry[] = teams
+      .map(t => ({ teamId: t.id, teamName: t.name, teamLogo: t.logo, pts: parseInt(ptsMap[t.id] ?? "0") || 0, place: "" }))
+      .filter(r => r.pts > 0);
+    // Sort by pts desc, assign place labels from breakdown if available
+    results.sort((a, b) => b.pts - a.pts);
+    results.forEach((r, i) => { r.place = event.pointsBreakdown[i]?.place ?? `#${i + 1}`; });
+    onMarkComplete(results);
+    setShowResults(false);
+  }
+
+  function clearResults() {
+    const fresh: Record<string, string> = {};
+    teams.forEach(t => { fresh[t.id] = "0"; });
+    setPtsMap(fresh);
+    onMarkComplete([]);
+    setShowResults(false);
+  }
+
+  const totalAwarded = teams.reduce((s, t) => s + (parseInt(ptsMap[t.id] ?? "0") || 0), 0);
 
   return (
-    <div className={`relative rounded-xl border bg-card/50 transition-opacity ${event.hidden ? "opacity-50" : ""}`} style={{ borderColor: `${color}25` }}>
-      <div className="h-0.5 absolute top-0 left-0 right-0 rounded-t-xl" style={{ background: color }} />
+    <div
+      className={`relative rounded-xl border bg-card/50 transition-opacity ${event.hidden ? "opacity-50" : ""}`}
+      style={{ borderColor: isLive ? "hsl(0 80% 50% / 0.5)" : `${color}25` }}
+    >
+      {/* Top colour bar */}
+      <div
+        className="h-0.5 absolute top-0 left-0 right-0 rounded-t-xl"
+        style={{ background: isLive ? "hsl(0 72% 55%)" : color }}
+      />
+
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
+          {/* Left: info */}
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xl shrink-0">{event.emoji || "📅"}</span>
             <div className="min-w-0">
@@ -192,36 +254,74 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onMarkCompl
                 <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest" style={{ background: `${color}18`, color }}>{event.category}</span>
                 {event.date && <span>{formatDate(event.date)}</span>}
                 {event.duration && <span>· {event.duration}</span>}
-                {event.isPast && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">Past</span>}
+                {isLive && (
+                  <motion.span
+                    animate={{ opacity: [1, 0.5, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="rounded px-1.5 py-0.5 text-[10px] font-bold text-red-400 bg-red-400/10"
+                  >
+                    ● LIVE
+                  </motion.span>
+                )}
+                {isCompleted && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-400/10">✓ DONE</span>
+                )}
                 {event.hidden && <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] text-destructive">Hidden</span>}
-                {event.winnerTeamName && (
+                {alreadyHasResults && (
                   <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold">
-                    🏆 {event.winnerTeamLogo} {event.winnerTeamName} · {event.winnerPoints}pts
+                    🏆 Results recorded
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-0.5 shrink-0">
+
+          {/* Right: actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* ▶ Go Live — scheduled non-past events */}
+            {isScheduled && !event.isPast && (
+              <button
+                onClick={onGoLive}
+                title="Go Live"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 transition-colors"
+              >
+                <Play className="h-3 w-3 fill-current" /> Live
+              </button>
+            )}
+            {/* ■ End — live events */}
+            {isLive && (
+              <button
+                onClick={handleEnd}
+                title="End event & enter results"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors"
+              >
+                <Square className="h-3 w-3 fill-current" /> End
+              </button>
+            )}
+            {/* Trophy — view/edit results */}
             <button
-              onClick={() => setShowComplete(v => !v)}
-              title={event.winnerTeamId ? "Change winner" : "Mark winner"}
+              onClick={handleOpenResults}
+              title="View / edit results"
               className={`rounded-md p-1.5 transition-colors ${
-                event.winnerTeamId ? "text-gold bg-gold/10" : showComplete ? "text-gold bg-gold/10" : "text-muted-foreground hover:text-gold hover:bg-gold/10"
-              }`}>
+                alreadyHasResults || showResults
+                  ? "text-gold bg-gold/10"
+                  : "text-muted-foreground hover:text-gold hover:bg-gold/10"
+              }`}
+            >
               <Trophy className="h-3.5 w-3.5" />
             </button>
             <button onClick={onToggleHidden} title={event.hidden ? "Unhide" : "Hide"}
               className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors">
               {event.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
             </button>
-            <button onClick={onEdit} className="rounded-md p-1.5 text-muted-foreground hover:text-gold hover:bg-gold/10 transition-colors">
+            <button onClick={onEdit}
+              className="rounded-md p-1.5 text-muted-foreground hover:text-gold hover:bg-gold/10 transition-colors">
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => { if (confirmDel) { onDelete(); } else { setConfirmDel(true); setTimeout(() => setConfirmDel(false), 3000); } }}
               className={`rounded-md p-1.5 transition-colors ${confirmDel ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}
-              title={confirmDel ? "Click again to confirm delete" : "Delete"}>
+              title={confirmDel ? "Click again to confirm" : "Delete"}>
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -229,55 +329,103 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onMarkCompl
         {event.format && <p className="mt-1.5 text-xs text-muted-foreground ml-9">{event.format}</p>}
       </div>
 
-      {/* Inline mark-winner panel */}
+      {/* ── Results panel ─────────────────────────────────────── */}
       <AnimatePresence>
-        {showComplete && (
+        {showResults && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="border-t border-border/40 bg-gold/5 px-4 py-3 flex flex-wrap items-end gap-3">
-              <div className="flex-1 min-w-[160px]">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Winning Team</p>
-                <select
-                  value={winTeamId}
-                  onChange={e => setWinTeamId(e.target.value)}
-                  className="w-full rounded-lg border border-border/70 bg-background/60 px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors"
-                >
-                  <option value="">Select team…</option>
-                  {teams.map(t => (
-                    <option key={t.id} value={t.id}>{t.logo} {t.name}</option>
-                  ))}
-                </select>
+            <div className="border-t border-border/40 bg-card/60 px-4 pt-4 pb-5 space-y-4">
+
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Enter event results</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Set points earned per team. Zero = didn't place.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {event.pointsBreakdown.length > 0 && (
+                    <button
+                      onClick={quickFill}
+                      title="Auto-fill top teams from breakdown"
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-gold/80 hover:text-gold hover:bg-gold/10 border border-gold/20 hover:border-gold/40 transition-colors"
+                    >
+                      <Zap className="h-3 w-3" /> Quick fill
+                    </button>
+                  )}
+                  <button onClick={() => setShowResults(false)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="w-24">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Points</p>
-                <input
-                  type="number"
-                  value={winPoints}
-                  onChange={e => setWinPoints(e.target.value)}
-                  className="w-full rounded-lg border border-border/70 bg-background/60 px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors"
-                  min={0}
-                />
+
+              {alreadyHasResults && (
+                <p className="text-[10px] text-amber-400/90 bg-amber-400/8 rounded-lg px-3 py-2">
+                  ⚠ Results already applied. Re-confirming will add points on top of existing scores.
+                </p>
+              )}
+
+              {/* Per-team input grid */}
+              <div className="space-y-2">
+                {teams.map(team => {
+                  const pts = ptsMap[team.id] ?? "0";
+                  const ptsNum = parseInt(pts) || 0;
+                  return (
+                    <div key={team.id} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-background/40 border border-border/30">
+                      <span className="text-base shrink-0">{team.logo}</span>
+                      <span className="flex-1 text-sm font-medium text-foreground truncate">{team.name}</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0 w-16 text-right tabular-nums">
+                        now: {team.score}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Quick –/+ nudge buttons */}
+                        {event.pointsBreakdown.map(row => (
+                          <button
+                            key={row.pts}
+                            onClick={() => setPtsMap(p => ({ ...p, [team.id]: String(row.pts) }))}
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums transition-colors ${
+                              ptsNum === row.pts
+                                ? "bg-gold/20 text-gold border border-gold/30"
+                                : "text-muted-foreground hover:text-gold hover:bg-gold/10 border border-transparent"
+                            }`}
+                          >
+                            {row.pts}
+                          </button>
+                        ))}
+                        <input
+                          type="number"
+                          min={0}
+                          value={pts}
+                          onChange={e => setPtsMap(p => ({ ...p, [team.id]: e.target.value }))}
+                          className="w-16 rounded-lg border border-border/70 bg-background/60 px-2 py-1 text-center text-sm font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Footer */}
+              <div className="flex items-center gap-3 pt-1">
                 <button
-                  onClick={applyWinner}
-                  disabled={!winTeamId}
-                  className="flex items-center gap-1.5 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-background hover:bg-gold/90 disabled:opacity-40 transition-colors"
+                  onClick={confirmResults}
+                  className="flex items-center gap-1.5 rounded-lg bg-gold px-4 py-1.5 text-xs font-bold text-background hover:bg-gold/90 transition-colors"
                 >
-                  <Trophy className="h-3 w-3" /> Set Winner
+                  <Trophy className="h-3.5 w-3.5" /> Confirm & Apply
                 </button>
-                {event.winnerTeamId && (
-                  <button onClick={clearWinner} className="rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors">
-                    Clear
+                {alreadyHasResults && (
+                  <button onClick={clearResults} className="rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors">
+                    Clear results
                   </button>
                 )}
-                <button onClick={() => setShowComplete(false)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                  {totalAwarded > 0 ? `${totalAwarded} pts total` : ""}
+                </span>
               </div>
             </div>
           </motion.div>
@@ -288,12 +436,14 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onMarkCompl
 }
 
 export function AdminEvents() {
-  const { events, teams, addEvent, updateEvent, deleteEvent } = useArena();
+  const { events, teams, addEvent, updateEvent, deleteEvent, updateScore } = useArena();
   const [editTarget, setEditTarget] = useState<ArenaEvent | "new" | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm());
   const [showPast, setShowPast] = useState(false);
 
-  const upcoming = events.filter(e => !e.isPast);
+  const upcoming = events
+    .filter(e => !e.isPast)
+    .sort((a, b) => (a.status === 'live' ? -1 : b.status === 'live' ? 1 : 0));
   const past = events.filter(e => e.isPast);
 
   function openCreate() { setForm(emptyForm()); setEditTarget("new"); }
@@ -303,12 +453,23 @@ export function AdminEvents() {
     setEditTarget(null);
   }
 
-  function handleMarkComplete(eventId: string, teamId: string, teamName: string, teamLogo: string, points: number) {
-    if (!teamId) {
-      updateEvent(eventId, { winnerTeamId: undefined, winnerTeamName: undefined, winnerTeamLogo: undefined, winnerPoints: undefined, completedAt: undefined });
-    } else {
-      updateEvent(eventId, { winnerTeamId: teamId, winnerTeamName: teamName, winnerTeamLogo: teamLogo, winnerPoints: points, completedAt: Date.now(), isPast: true });
+  function handleMarkComplete(eventId: string, results: ResultEntry[]) {
+    if (results.length === 0) {
+      updateEvent(eventId, {
+        winnerTeamId: undefined, winnerTeamName: undefined, winnerTeamLogo: undefined,
+        winnerPoints: undefined, completedAt: undefined, results: [],
+        status: 'scheduled', isPast: false,
+      });
+      return;
     }
+    // Apply points — each team gets exactly the pts entered
+    results.forEach(r => { if (r.teamId && r.pts > 0) updateScore(r.teamId, r.pts); });
+    const first = results[0]; // already sorted by pts desc in confirmResults
+    updateEvent(eventId, {
+      isPast: true, status: 'completed', completedAt: Date.now(), results,
+      winnerTeamId: first.teamId, winnerTeamName: first.teamName,
+      winnerTeamLogo: first.teamLogo, winnerPoints: first.pts,
+    });
   }
 
   if (editTarget !== null) {
@@ -337,7 +498,7 @@ export function AdminEvents() {
           <div className="space-y-2">
             {upcoming.map(e => (
               <motion.div key={e.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <EventCard event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onMarkComplete={(tid, tn, tl, pts) => handleMarkComplete(e.id, tid, tn, tl, pts)} />
+                <EventCard event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} />
               </motion.div>
             ))}
           </div>
@@ -356,7 +517,7 @@ export function AdminEvents() {
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="space-y-2">
                   {past.map(e => (
-                    <EventCard key={e.id} event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onMarkComplete={(tid, tn, tl, pts) => handleMarkComplete(e.id, tid, tn, tl, pts)} />
+                    <EventCard key={e.id} event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} />
                   ))}
                 </div>
               </motion.div>

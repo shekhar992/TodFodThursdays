@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Megaphone, Puzzle, BarChart3, Users, UserCheck, Shield } from "lucide-react";
+import { Calendar, Megaphone, Puzzle, BarChart3, Users, UserCheck, Shield, Tv, Send } from "lucide-react";
 import { AdminEvents } from "./AdminEvents";
 import { AdminAnnouncements } from "./AdminAnnouncements";
 import { AdminPuzzles } from "./AdminPuzzles";
@@ -8,6 +8,59 @@ import { AdminPreview } from "./AdminPreview";
 import { AdminUsers } from "./AdminUsers";
 import { AdminPlayers } from "./AdminPlayers";
 import { AdminTeams } from "./AdminTeams";
+import { useArena } from "@/context/ArenaContext";
+
+const QUICK_PRESETS = ["🧩 Puzzle is live!", "⏰ Round ended!", "🏆 Check the leaderboard!", "📍 Move to next station", "🎉 Last round — give it your all!"];
+
+function QuickAnnounce() {
+  const { addAnnouncement } = useArena();
+  const [text, setText] = useState("");
+  const MAX = 120;
+  function post(msg: string) {
+    if (!msg.trim()) return;
+    addAnnouncement(msg.trim());
+    setText("");
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5 items-center">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">Quick post:</span>
+        {QUICK_PRESETS.map(p => (
+          <button
+            key={p}
+            onClick={() => post(p)}
+            className="rounded-full border border-border/60 bg-background/50 px-2.5 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:border-gold/40 hover:bg-gold/5 transition-colors whitespace-nowrap"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <input
+            value={text}
+            onChange={e => setText(e.target.value.slice(0, MAX))}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) post(text); }}
+            className="w-full rounded-lg border border-border/70 bg-background/60 px-3 py-1.5 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors"
+            placeholder="Custom announcement… (Enter to post)"
+          />
+          <span className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] tabular-nums pointer-events-none ${
+            text.length > MAX * 0.85 ? "text-amber-400" : "text-muted-foreground/50"
+          }`}>
+            {text.length}/{MAX}
+          </span>
+        </div>
+        <button
+          onClick={() => post(text)}
+          disabled={!text.trim()}
+          className="flex items-center gap-1.5 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-background hover:bg-gold/90 disabled:opacity-40 transition-colors shrink-0"
+        >
+          <Send className="h-3 w-3" /> Post
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const sections = [
   { id: "events", label: "Events", icon: Calendar },
@@ -23,6 +76,7 @@ type Section = (typeof sections)[number]["id"];
 
 export function AdminPanel() {
   const [active, setActive] = useState<Section>("events");
+  const { stageMode, setStageModeActive } = useArena();
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,11 +105,36 @@ export function AdminPanel() {
               </button>
             ))}
           </nav>
+
+          {/* Stage Mode toggle */}
+          <div className="mt-6 pt-4 border-t border-border/40">
+            <button
+              onClick={() => setStageModeActive(!stageMode)}
+              className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                stageMode
+                  ? "bg-red-500/15 text-red-400 border border-red-500/25 shadow-[0_0_12px_hsl(0_80%_60%/0.15)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30 border border-transparent"
+              }`}
+            >
+              <Tv className="h-4 w-4 shrink-0" />
+              <span>{stageMode ? "● Stage ON" : "Stage Mode"}</span>
+            </button>
+            {stageMode && (
+              <p className="mt-1.5 px-3 text-[10px] text-red-400/60 leading-tight">
+                Player screens show big display view
+              </p>
+            )}
+          </div>
         </aside>
 
         {/* Main workspace */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-xl">
+        <main className="flex-1 overflow-y-auto">
+          {/* Sticky quick-announce bar */}
+          <div className="sticky top-0 z-20 px-6 py-3 bg-background/90 backdrop-blur-md border-b border-border/40">
+            <QuickAnnounce />
+          </div>
+          <div className="p-6">
+          <div className="max-w-2xl">
             {active === "events" && <AdminEvents />}
             {active === "announcements" && <AdminAnnouncements />}
             {active === "puzzles" && <AdminPuzzles />}
@@ -63,6 +142,7 @@ export function AdminPanel() {
             {active === "teams" && <AdminTeams />}
             {active === "players" && <AdminPlayers />}
             {active === "users" && <AdminUsers />}
+          </div>
           </div>
         </main>
 

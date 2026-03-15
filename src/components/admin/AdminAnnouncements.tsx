@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const inputCls = "w-full rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors";
 const labelCls = "block text-xs font-semibold uppercase tracking-wider text-muted-foreground";
+const MAX = 120;
 
 export function AdminAnnouncements() {
   const { addAnnouncement, deleteAnnouncement, announcements } = useArena();
@@ -21,19 +22,26 @@ export function AdminAnnouncements() {
     <div className="space-y-6">
       <div>
         <h2 className="font-carnival text-2xl tracking-wide text-gold">Announcements</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">Posts appear instantly in the player header ticker and bell dropdown.</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Posts appear instantly in the player header ticker. Use the quick-post bar at the top for presets.</p>
       </div>
 
       <div className="rounded-xl border border-border/50 bg-card/40 p-5">
         <label className={`${labelCls} mb-2`}>New Announcement</label>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            rows={3}
-            className={`${inputCls} resize-none`}
-            placeholder="Write your announcement... (e.g. 🏆 Team Titans leads after Quiz Battle Royale!)"
-          />
+          <div className="relative">
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value.slice(0, MAX))}
+              rows={3}
+              className={`${inputCls} resize-none pb-6`}
+              placeholder="Write your announcement… (e.g. 🏆 Team Titans leads after Quiz Battle Royale!)"
+            />
+            <span className={`absolute bottom-2 right-3 text-[10px] tabular-nums pointer-events-none ${
+              text.length > MAX * 0.85 ? "text-amber-400" : "text-muted-foreground/50"
+            }`}>
+              {text.length}/{MAX}
+            </span>
+          </div>
           <button
             type="submit"
             disabled={!text.trim()}

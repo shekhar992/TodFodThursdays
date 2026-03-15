@@ -162,6 +162,8 @@ export interface EventDetail {
   winner?: string;      // past events only
   winnerLogo?: string;
   color: string;
+  results?: { place: string; teamName: string; teamLogo?: string; pts: number }[];
+  memories?: string[];   // image URLs uploaded by admin
 }
 
 export const EVENT_DETAILS: Record<string, EventDetail> = {
@@ -286,9 +288,15 @@ export const EVENT_DETAILS: Record<string, EventDetail> = {
     duration: '30 min',
     color: '#7A5CFF',
     rules: ['30 rapid-fire questions', '+5 correct, −2 wrong', 'No conferring'],
-    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }, { place: '🥈 2nd', pts: 70 }, { place: '🥉 3rd', pts: 50 }],
     winner: 'Team Titans',
     winnerLogo: '⚡',
+    results: [
+      { place: '🥇', teamName: 'Team Titans',    teamLogo: '⚡', pts: 100 },
+      { place: '🥈', teamName: 'Team Phoenix',   teamLogo: '🔥', pts: 70  },
+      { place: '🥉', teamName: 'Team Warriors',  teamLogo: '⚔️', pts: 50  },
+      { place: '4th', teamName: 'Team Mavericks', teamLogo: '🦅', pts: 20 },
+    ],
   },
   p2: {
     emoji: '🔐',
@@ -296,9 +304,15 @@ export const EVENT_DETAILS: Record<string, EventDetail> = {
     duration: '45 min',
     color: '#00E5FF',
     rules: ['5 rooms', 'One hint per room', 'Fastest wins'],
-    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }, { place: '🥈 2nd', pts: 70 }, { place: '🥉 3rd', pts: 50 }],
     winner: 'Team Phoenix',
     winnerLogo: '🔥',
+    results: [
+      { place: '🥇', teamName: 'Team Phoenix',   teamLogo: '🔥', pts: 100 },
+      { place: '🥈', teamName: 'Team Mavericks', teamLogo: '🦅', pts: 70  },
+      { place: '🥉', teamName: 'Team Titans',    teamLogo: '⚡', pts: 50  },
+      { place: '4th', teamName: 'Team Warriors',  teamLogo: '⚔️', pts: 20 },
+    ],
   },
   p3: {
     emoji: '🏃',
@@ -306,9 +320,19 @@ export const EVENT_DETAILS: Record<string, EventDetail> = {
     duration: '60 min',
     color: '#00FFC6',
     rules: ['4 relay legs', 'Fastest cumulative time wins'],
-    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }, { place: '🥈 2nd', pts: 70 }, { place: '🥉 3rd', pts: 50 }],
     winner: 'Team Warriors',
     winnerLogo: '⚔️',
+    results: [
+      { place: '🥇', teamName: 'Team Warriors',  teamLogo: '⚔️', pts: 100 },
+      { place: '🥈', teamName: 'Team Titans',    teamLogo: '⚡', pts: 70  },
+      { place: '🥉', teamName: 'Team Phoenix',   teamLogo: '🔥', pts: 50  },
+      { place: '4th', teamName: 'Team Mavericks', teamLogo: '🦅', pts: 20 },
+    ],
+    memories: [
+      'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',
+      'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&q=80',
+    ],
   },
   p4: {
     emoji: '♟️',
@@ -316,9 +340,15 @@ export const EVENT_DETAILS: Record<string, EventDetail> = {
     duration: '45 min',
     color: '#FF2E88',
     rules: ['Real-time strategy rounds', 'Elimination bracket'],
-    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 100 }, { place: '🥈 2nd', pts: 70 }, { place: '🥉 3rd', pts: 50 }],
     winner: 'Team Titans',
     winnerLogo: '⚡',
+    results: [
+      { place: '🥇', teamName: 'Team Titans',    teamLogo: '⚡', pts: 100 },
+      { place: '🥈', teamName: 'Team Warriors',  teamLogo: '⚔️', pts: 70  },
+      { place: '🥉', teamName: 'Team Mavericks', teamLogo: '🦅', pts: 50  },
+      { place: '4th', teamName: 'Team Phoenix',   teamLogo: '🔥', pts: 20 },
+    ],
   },
   p5: {
     emoji: '💻',
@@ -326,9 +356,20 @@ export const EVENT_DETAILS: Record<string, EventDetail> = {
     duration: '4 hours',
     color: '#FFE600',
     rules: ['Any language/tool', '5-min demo pitch', 'Live judge panel'],
-    pointsBreakdown: [{ place: '🥇 1st', pts: 150 }],
+    pointsBreakdown: [{ place: '🥇 1st', pts: 150 }, { place: '🥈 2nd', pts: 100 }, { place: '🥉 3rd', pts: 70 }],
     winner: 'Team Mavericks',
     winnerLogo: '🦅',
+    results: [
+      { place: '🥇', teamName: 'Team Mavericks', teamLogo: '🦅', pts: 150 },
+      { place: '🥈', teamName: 'Team Phoenix',   teamLogo: '🔥', pts: 100 },
+      { place: '🥉', teamName: 'Team Titans',    teamLogo: '⚡', pts: 70  },
+      { place: '4th', teamName: 'Team Warriors',  teamLogo: '⚔️', pts: 30 },
+    ],
+    memories: [
+      'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
+      'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80',
+      'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80',
+    ],
   },
 };
 
@@ -340,9 +381,12 @@ export interface PastPuzzle {
   answer: string;
   hint: string;
   points: number;
+  awardedPoints?: number;
   solvedBy: string;
   solvedByLogo: string;
+  solvedByTeamId?: string;
   date: string;
+  scheduledFor?: number;  // ms timestamp
 }
 
 export const mockPastPuzzles: PastPuzzle[] = [
@@ -352,9 +396,11 @@ export const mockPastPuzzles: PastPuzzle[] = [
     answer: 'A keyboard',
     hint: 'You use it every day at work.',
     points: 40,
+    awardedPoints: 70,
     solvedBy: 'Team Phoenix',
     solvedByLogo: '🔥',
     date: '2026-03-06',
+    scheduledFor: new Date('2026-03-06T18:00:00').getTime(),
   },
   {
     id: 'ppz2',
@@ -362,9 +408,11 @@ export const mockPastPuzzles: PastPuzzle[] = [
     answer: 'Footsteps',
     hint: 'Think about movement.',
     points: 35,
+    awardedPoints: 35,
     solvedBy: 'Team Titans',
     solvedByLogo: '⚡',
     date: '2026-03-06',
+    scheduledFor: new Date('2026-03-06T20:00:00').getTime(),
   },
   {
     id: 'ppz3',
@@ -372,9 +420,11 @@ export const mockPastPuzzles: PastPuzzle[] = [
     answer: 'A map',
     hint: 'It helps you find your way.',
     points: 60,
+    awardedPoints: 110,
     solvedBy: 'Team Mavericks',
     solvedByLogo: '🦅',
     date: '2026-02-27',
+    scheduledFor: new Date('2026-02-27T19:00:00').getTime(),
   },
 ];
 

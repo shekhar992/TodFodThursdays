@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useArena } from "@/context/ArenaContext";
 import { categoryColors } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Clock, Trophy, ChevronDown, ChevronUp, Images } from "lucide-react";
 
 interface EventCardProps {
   id: string;
@@ -16,6 +16,12 @@ interface EventCardProps {
   rules?: string[];
   pointsBreakdown?: { place: string; pts: number }[];
   isPast?: boolean;
+  // Past-event extras
+  winnerTeamName?: string;
+  winnerTeamLogo?: string;
+  winnerPoints?: number;
+  results?: { place: string; pts: number; teamName?: string; teamLogo?: string }[];
+  memories?: string[];
 }
 
 function formatDate(dateStr: string) {
@@ -138,28 +144,122 @@ function UpcomingEventCard({ title, category, date, description, emoji, format, 
   );
 }
 
-function PastEventRow({ title, category, date, emoji }: EventCardProps) {
+function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeamLogo, winnerPoints, results = [], memories = [] }: EventCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const accentColor = (categoryColors as Record<string, string>)[category] ?? "hsl(38 92% 50%)";
+  const hasDetails = results.length > 0 || memories.length > 0;
+
   return (
     <div
-      className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3 transition-colors hover:bg-accent/30"
+      className="rounded-xl border bg-card/40 overflow-hidden transition-colors"
       style={{ borderColor: `${accentColor}20` }}
     >
-      <div className="flex items-center gap-3">
-        <span className="text-lg">{emoji || "🎯"}</span>
-        <div>
-          <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="text-xs text-muted-foreground">{formatDate(date)}</p>
+      {/* ── Collapsed header row ── */}
+      <button
+        onClick={() => hasDetails && setExpanded(v => !v)}
+        className={`w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left ${hasDetails ? "hover:bg-accent/20 transition-colors" : ""}`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-lg shrink-0">{emoji || "🎯"}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight">{title}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <p className="text-xs text-muted-foreground">{formatDate(date)}</p>
+              {winnerTeamName && (
+                <p className="flex items-center gap-1 text-xs text-muted-foreground/70">
+                  <span>·</span>
+                  <Trophy className="h-2.5 w-2.5 shrink-0" style={{ color: accentColor }} />
+                  <span style={{ color: accentColor }} className="font-medium">
+                    {winnerTeamLogo} {winnerTeamName}
+                    {winnerPoints ? ` · ${winnerPoints} pts` : ""}
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <span
-          className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
-          style={{ borderColor: `${accentColor}30`, color: accentColor }}
-        >
-          {category}
-        </span>
-      </div>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span
+            className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+            style={{ borderColor: `${accentColor}30`, color: accentColor }}
+          >
+            {category}
+          </span>
+          {hasDetails && (
+            <span className="text-muted-foreground/50">
+              {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </span>
+          )}
+        </div>
+      </button>
+
+      {/* ── Expanded details ── */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t px-4 py-4 space-y-5" style={{ borderColor: `${accentColor}15` }}>
+
+              {/* Results leaderboard */}
+              {results.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Results</p>
+                  <div className="space-y-1.5">
+                    {results.map((r, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 ${i === 0 ? "bg-card border" : "bg-muted/30"}`}
+                        style={i === 0 ? { borderColor: `${accentColor}25`, background: `${accentColor}08` } : {}}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-base w-5 text-center leading-none">{r.place}</span>
+                          {r.teamLogo && <span className="text-sm">{r.teamLogo}</span>}
+                          <span className={`text-sm ${i === 0 ? "font-semibold text-foreground" : "text-foreground/80"}`}>
+                            {r.teamName ?? "—"}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-bold tabular-nums ${i === 0 ? "" : "text-muted-foreground"}`}
+                          style={i === 0 ? { color: accentColor } : {}}
+                        >
+                          +{r.pts} pts
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Memories */}
+              {memories.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                    <Images className="h-3 w-3" /> Memories
+                  </p>
+                  <div className={`grid gap-2 ${memories.length === 1 ? "grid-cols-1" : memories.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
+                    {memories.map((url, i) => (
+                      <div key={i} className="aspect-video rounded-lg overflow-hidden bg-muted/30">
+                        <img
+                          src={url}
+                          alt={`${title} memory ${i + 1}`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -254,6 +354,11 @@ export function EventsView() {
                     date={event.date}
                     description={event.description}
                     emoji={event.emoji}
+                    winnerTeamName={event.winnerTeamName}
+                    winnerTeamLogo={event.winnerTeamLogo}
+                    winnerPoints={event.winnerPoints}
+                    results={event.results}
+                    memories={event.memories}
                   />
                 </motion.div>
               );

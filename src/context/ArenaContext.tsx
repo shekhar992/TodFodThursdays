@@ -179,12 +179,21 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (rawPuzzle && rawPuzzle.isActive) {
-      setActivePuzzle(prev => ({
-        id: rawPuzzle.id, question: rawPuzzle.question, answer: rawPuzzle.answer,
-        points: rawPuzzle.points, hint: rawPuzzle.hint || undefined,
-        timeLimit: prev?.timeLimit ?? 300, timerRunning: prev?.timerRunning ?? false,
-        startedAt: prev?.startedAt, expiresAt: prev?.expiresAt,
-      }));
+      // Use DB values directly — DB is source of truth for all fields in prod.
+      // This ensures player clients see timerRunning/scheduledFor/expiresAt
+      // as soon as the admin updates them, via Realtime.
+      setActivePuzzle({
+        id: rawPuzzle.id,
+        question: rawPuzzle.question,
+        answer: rawPuzzle.answer,
+        points: rawPuzzle.points,
+        hint: rawPuzzle.hint || undefined,
+        timeLimit:    rawPuzzle.timeLimit    ?? 60,
+        timerRunning: rawPuzzle.timerRunning ?? false,
+        startedAt:    rawPuzzle.startedAt,
+        expiresAt:    rawPuzzle.expiresAt,
+        scheduledFor: rawPuzzle.scheduledFor,
+      });
       setPuzzleSolved(false);
     } else if (rawPuzzle === null && isSupabaseConfigured) {
       setActivePuzzle(null);
@@ -318,6 +327,12 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         id: prev.id, question: prev.question, answer: prev.answer,
         points: prev.points, completedAt: Date.now(), timedOut: true,
       }, ...h]);
+      // Deactivate in Supabase so Realtime doesn't restore the puzzle on all clients
+      if (isSupabaseConfigured) {
+        supabase.from("puzzles").update({ is_active: false, timer_running: false })
+          .eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] stopPuzzleTimer deactivate:", error.message); });
+      }
     }
     setActivePuzzle(null);
     setPuzzleSolved(false);
@@ -366,6 +381,12 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
       // Option A: close puzzle immediately — PuzzleModal caches last puzzle for its success state
       setActivePuzzle(null);
+      // Deactivate in Supabase so Realtime doesn't restore the puzzle on all clients
+      if (isSupabaseConfigured) {
+        supabase.from("puzzles").update({ is_active: false, timer_running: false })
+          .eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] solvePuzzle deactivate:", error.message); });
+      }
     }
     setPuzzleSolved(true);
   }, [solvedTeams, updateScore]);

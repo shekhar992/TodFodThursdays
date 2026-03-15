@@ -35,6 +35,12 @@ export interface Puzzle {
   points: number;
   isActive: boolean;
   duration?: number;
+  // Scheduling / timer fields (populated from DB in prod mode)
+  timeLimit?: number;       // seconds
+  scheduledFor?: number;    // ms timestamp
+  timerRunning?: boolean;
+  startedAt?: number;       // ms timestamp
+  expiresAt?: number;       // ms timestamp
 }
 
 // ─── Extended event-manager types ───────────────────────────────────────────

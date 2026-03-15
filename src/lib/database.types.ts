@@ -46,6 +46,17 @@ type PuzzlesRow = {
   created_at: string;
 };
 
+type PuzzleLibraryRow = {
+  id: string;
+  question: string;
+  answer: string;
+  hint: string;
+  points: number;
+  time_limit: number;           // seconds
+  scheduled_for: string | null; // ISO timestamp — optional auto-launch
+  created_at: string;
+};
+
 type ProfilesRow = {
   id: string;
   display_name: string;
@@ -81,6 +92,12 @@ export type Database = {
         Row: PuzzlesRow;
         Insert: Omit<PuzzlesRow, 'created_at'>;
         Update: Partial<Omit<PuzzlesRow, 'created_at'>>;
+        Relationships: [];
+      };
+      puzzle_library: {
+        Row: PuzzleLibraryRow;
+        Insert: Omit<PuzzleLibraryRow, 'created_at'>;
+        Update: Partial<Omit<PuzzleLibraryRow, 'created_at'>>;
         Relationships: [];
       };
       profiles: {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useArena } from "@/context/ArenaContext";
 import { usePuzzleTimer, formatCountdown } from "@/hooks/usePuzzleTimer";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   Zap, Play, Square, Trophy, Clock, AlertCircle, Plus,
   Trash2, BookOpen, ChevronDown, ChevronUp, Library, Pencil, Lock, X, Eye, EyeOff,
@@ -265,7 +266,7 @@ function NewPuzzleCard({ onSave, onCancel }: { onSave: (pz: LibraryPuzzle) => vo
           Cancel
         </button>
         <button disabled={!canSave}
-          onClick={() => { if (!canSave) return; onSave({ id: `lib-${Date.now()}`, question: q.trim(), answer: a.trim(), points: parseInt(pts) || 50, hint: h.trim() || undefined, timeLimit: tl, scheduledFor: sf ? new Date(sf).getTime() : undefined, createdAt: Date.now() }); }}
+          onClick={() => { if (!canSave) return; onSave({ id: crypto.randomUUID(), question: q.trim(), answer: a.trim(), points: parseInt(pts) || 50, hint: h.trim() || undefined, timeLimit: tl, scheduledFor: sf ? new Date(sf).getTime() : undefined, createdAt: Date.now() }); }}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[hsl(288_80%_62%)] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40 hover:bg-[hsl(288_80%_55%)] transition-colors shadow-[0_0_12px_hsl(288_80%_62%/0.3)]">
           <BookOpen className="h-3.5 w-3.5" /> Save to Library
         </button>
@@ -282,6 +283,66 @@ export function AdminPuzzles() {
   } = useArena();
 
   const [library, setLibrary] = useState<LibraryPuzzle[]>(SEED_LIBRARY);
+  const [libraryLoading, setLibraryLoading] = useState(isSupabaseConfigured);
+
+  // ── Load library from Supabase on mount ──────────────────────────────
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    supabase
+      .from('puzzle_library')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) { console.error('[Supabase] puzzle_library fetch:', error.message); }
+        else if (data && data.length > 0) {
+          setLibrary(data.map(r => ({
+            id: r.id,
+            question: r.question,
+            answer: r.answer,
+            hint: r.hint || undefined,
+            points: r.points,
+            timeLimit: r.time_limit,
+            scheduledFor: r.scheduled_for ? new Date(r.scheduled_for).getTime() : undefined,
+            createdAt: new Date(r.created_at).getTime(),
+          })));
+        } else {
+          // No rows yet — keep SEED_LIBRARY as starter content
+        }
+        setLibraryLoading(false);
+      });
+  }, []);
+
+  function persistCreate(pz: LibraryPuzzle) {
+    if (!isSupabaseConfigured) return;
+    supabase.from('puzzle_library').insert({
+      id: pz.id,
+      question: pz.question,
+      answer: pz.answer,
+      hint: pz.hint ?? '',
+      points: pz.points,
+      time_limit: pz.timeLimit,
+      scheduled_for: pz.scheduledFor ? new Date(pz.scheduledFor).toISOString() : null,
+    }).then(({ error }) => { if (error) console.error('[Supabase] puzzle_library insert:', error.message); });
+  }
+
+  function persistUpdate(pz: LibraryPuzzle) {
+    if (!isSupabaseConfigured) return;
+    supabase.from('puzzle_library').update({
+      question: pz.question,
+      answer: pz.answer,
+      hint: pz.hint ?? '',
+      points: pz.points,
+      time_limit: pz.timeLimit,
+      scheduled_for: pz.scheduledFor ? new Date(pz.scheduledFor).toISOString() : null,
+    }).eq('id', pz.id)
+      .then(({ error }) => { if (error) console.error('[Supabase] puzzle_library update:', error.message); });
+  }
+
+  function persistDelete(id: string) {
+    if (!isSupabaseConfigured) return;
+    supabase.from('puzzle_library').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[Supabase] puzzle_library delete:', error.message); });
+  }
   const [showCreator, setShowCreator] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPast, setShowPast] = useState(false);
@@ -491,7 +552,7 @@ export function AdminPuzzles() {
           {showCreator && (
             <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <NewPuzzleCard
-                onSave={pz => { setLibrary(prev => [pz, ...prev]); setShowCreator(false); }}
+                onSave={pz => { setLibrary(prev => [pz, ...prev]); persistCreate(pz); setShowCreator(false); }}
                 onCancel={() => setShowCreator(false)}
               />
             </motion.div>
@@ -506,8 +567,8 @@ export function AdminPuzzles() {
               <LibraryCard
                 pz={pz}
                 onLaunch={() => launchFromLibrary(pz)}
-                onSave={updated => setLibrary(prev => prev.map(p => p.id === pz.id ? updated : p))}
-                onDelete={() => setLibrary(prev => prev.filter(p => p.id !== pz.id))}
+                onSave={updated => { setLibrary(prev => prev.map(p => p.id === pz.id ? updated : p)); persistUpdate(updated); }}
+                onDelete={() => { setLibrary(prev => prev.filter(p => p.id !== pz.id)); persistDelete(pz.id); }}
                 isLocked={isLocked}
                 isEditing={editingId === pz.id}
                 onEditToggle={() => setEditingId(editingId === pz.id ? null : pz.id)}

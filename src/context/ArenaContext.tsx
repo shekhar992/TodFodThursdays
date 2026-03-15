@@ -200,6 +200,34 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     }
   }, [rawPuzzle]);
 
+  // ── Load completed puzzle history from Supabase on mount ──────────────
+  useEffect(() => {
+    if (!isSupabaseConfigured || isMockMode) return;
+    supabase
+      .from('completed_puzzles')
+      .select('*')
+      .order('completed_at', { ascending: false })
+      .limit(50)
+      .then(({ data, error }) => {
+        if (error) { console.error('[Supabase] completed_puzzles fetch:', error.message); return; }
+        if (data && data.length > 0) {
+          setCompletedPuzzles(data.map(r => ({
+            id: r.id,
+            question: r.question,
+            answer: r.answer,
+            points: r.points,
+            awardedPoints: r.awarded_points ?? undefined,
+            solvedBy: r.solved_by ?? undefined,
+            solvedByLogo: r.solved_by_logo ?? undefined,
+            solvedByPlayer: r.solved_by_player ?? undefined,
+            solvedByTeamId: r.solved_by_team_id ?? undefined,
+            completedAt: new Date(r.completed_at).getTime(),
+            timedOut: r.timed_out,
+          })));
+        }
+      });
+  }, []);
+
   // ── Auto-expire puzzle when timer reaches 0 ────────────────────────────
   useEffect(() => {
     if (expireTimerRef.current) clearTimeout(expireTimerRef.current);
@@ -208,10 +236,17 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     const expire = () => {
       const prev = activePuzzleRef.current;
       if (!prev) return;
-      setCompletedPuzzles(h => [{
+      const expireEntry: CompletedPuzzle = {
         id: prev.id, question: prev.question, answer: prev.answer,
         points: prev.points, completedAt: Date.now(), timedOut: true,
-      }, ...h]);
+      };
+      setCompletedPuzzles(h => [expireEntry, ...h]);
+      persistCompleted(expireEntry);
+      if (isSupabaseConfigured) {
+        supabase.from("puzzles").update({ is_active: false, timer_running: false })
+          .eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] expire deactivate:", error.message); });
+      }
       setActivePuzzle(null);
       setPuzzleSolved(false);
     };
@@ -221,6 +256,24 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     expireTimerRef.current = setTimeout(expire, msLeft);
     return () => { if (expireTimerRef.current) clearTimeout(expireTimerRef.current); };
   }, [activePuzzle?.timerRunning, activePuzzle?.expiresAt]);
+
+  // ── Persist completed puzzle to Supabase ─────────────────────────────
+  function persistCompleted(cp: CompletedPuzzle) {
+    if (!isSupabaseConfigured) return;
+    supabase.from('completed_puzzles').insert({
+      id: cp.id,
+      question: cp.question,
+      answer: cp.answer,
+      points: cp.points,
+      awarded_points: cp.awardedPoints ?? null,
+      solved_by: cp.solvedBy ?? null,
+      solved_by_logo: cp.solvedByLogo ?? null,
+      solved_by_player: cp.solvedByPlayer ?? null,
+      solved_by_team_id: cp.solvedByTeamId ?? null,
+      completed_at: new Date(cp.completedAt).toISOString(),
+      timed_out: cp.timedOut,
+    }).then(({ error }) => { if (error) console.error('[Supabase] completed_puzzles insert:', error.message); });
+  }
 
   // ── Actions ───────────────────────────────────────────────────────────
   const addEvent = useCallback((event: Omit<ArenaEvent, "id">) => {
@@ -323,10 +376,12 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     if (expireTimerRef.current) clearTimeout(expireTimerRef.current);
     const prev = activePuzzleRef.current;
     if (prev) {
-      setCompletedPuzzles(h => [{
+      const stopEntry: CompletedPuzzle = {
         id: prev.id, question: prev.question, answer: prev.answer,
         points: prev.points, completedAt: Date.now(), timedOut: true,
-      }, ...h]);
+      };
+      setCompletedPuzzles(h => [stopEntry, ...h]);
+      persistCompleted(stopEntry);
       // Deactivate in Supabase so Realtime doesn't restore the puzzle on all clients
       if (isSupabaseConfigured) {
         supabase.from("puzzles").update({ is_active: false, timer_running: false })
@@ -364,14 +419,15 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       const multiplier = Math.max(0.5, 2 - (1.5 * elapsed / 60));
       const awardedPoints = Math.round((prev.points * multiplier) / 10) * 10;
 
-      setCompletedPuzzles(h => [{
+      const solvedEntry: CompletedPuzzle = {
         id: prev.id, question: prev.question, answer: prev.answer,
-        points: prev.points,             // base points unchanged
-        awardedPoints,                   // decayed actual score
+        points: prev.points, awardedPoints,
         solvedBy: solver?.teamName, solvedByLogo: solver?.teamLogo,
         solvedByPlayer: solver?.playerName, solvedByTeamId: solver?.teamId,
         completedAt: Date.now(), timedOut: false,
-      }, ...h]);
+      };
+      setCompletedPuzzles(h => [solvedEntry, ...h]);
+      persistCompleted(solvedEntry);
 
       // Auto-add to scoreboard
       if (solver?.teamId) {

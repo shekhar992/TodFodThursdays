@@ -46,6 +46,20 @@ type PuzzlesRow = {
   created_at: string;
 };
 
+type CompletedPuzzlesRow = {
+  id: string;
+  question: string;
+  answer: string;
+  points: number;
+  awarded_points: number | null;
+  solved_by: string | null;
+  solved_by_logo: string | null;
+  solved_by_player: string | null;
+  solved_by_team_id: string | null;
+  completed_at: string;
+  timed_out: boolean;
+};
+
 type PuzzleLibraryRow = {
   id: string;
   question: string;
@@ -98,6 +112,12 @@ export type Database = {
         Row: PuzzleLibraryRow;
         Insert: Omit<PuzzleLibraryRow, 'created_at'>;
         Update: Partial<Omit<PuzzleLibraryRow, 'created_at'>>;
+        Relationships: [];
+      };
+      completed_puzzles: {
+        Row: CompletedPuzzlesRow;
+        Insert: CompletedPuzzlesRow;
+        Update: Partial<CompletedPuzzlesRow>;
         Relationships: [];
       };
       profiles: {

@@ -394,17 +394,17 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       if ('winnerTeamLogo' in updates) dbUpdate.winner_team_logo = updates.winnerTeamLogo ?? null;
       if ('winnerPoints'   in updates) dbUpdate.winner_points    = updates.winnerPoints   ?? null;
       if ('results'        in updates) dbUpdate.results   = updates.results   ?? [];
-      // Merge rich detail fields into the data jsonb column
+      // Persist rich detail fields into the data jsonb column.
+      // handleSave always passes ALL fields, so use updates directly.
+      // Partial-update callers (status, winner, etc.) never include these keys → skipped.
       const dataFields = ['emoji', 'format', 'duration', 'rules', 'pointsBreakdown'] as const;
       if (dataFields.some(k => k in updates)) {
-        // Read current event to merge unchanged fields
-        const current = (() => { let ev: any; setEvents(prev => { ev = prev.find(e => e.id === id); return prev; }); return ev; })();
         dbUpdate.data = {
-          emoji:           'emoji'           in updates ? updates.emoji           : current?.emoji,
-          format:          'format'          in updates ? updates.format          : current?.format,
-          duration:        'duration'        in updates ? updates.duration        : current?.duration,
-          rules:           'rules'           in updates ? updates.rules           : current?.rules,
-          pointsBreakdown: 'pointsBreakdown' in updates ? updates.pointsBreakdown : current?.pointsBreakdown,
+          emoji:           updates.emoji,
+          format:          updates.format,
+          duration:        updates.duration,
+          rules:           updates.rules,
+          pointsBreakdown: updates.pointsBreakdown,
         };
       }
       if ('memories'       in updates) {

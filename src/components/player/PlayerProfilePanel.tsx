@@ -42,7 +42,7 @@ export function PlayerProfilePanel() {
       (r.teamId && r.teamId === currentTeam?.id) ||
       (!r.teamId && r.teamName && r.teamName === currentTeam?.name)
     ) ?? null,
-  }));
+  })).filter(({ result }) => result !== null && (result.pts ?? 0) > 0);
 
   // Score split: event pts vs puzzle pts
   const eventPts = teamEventHistory.reduce((sum, { result }) => sum + (result?.pts ?? 0), 0);
@@ -322,7 +322,7 @@ export function PlayerProfilePanel() {
         </div>
 
         {/* ──────── Event history card ──────── */}
-        {teamEventHistory.length > 0 && (
+        {teamEventHistory.length > 0 ? (
           <div className="rounded-2xl border border-gold/20 bg-gold/5 overflow-hidden">
             <div className="px-4 py-3 border-b border-gold/15 flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-gold" />
@@ -335,12 +335,11 @@ export function PlayerProfilePanel() {
             </div>
             <div className="px-4 py-3 flex flex-col gap-2">
               {teamEventHistory.map(({ event: ev, result }, i) => {
-                // Determine placement badge
                 const place = result?.place ?? "";
                 const placeBadge = place.includes("1") || place.includes("🥇") ? "🥇"
                   : place.includes("2") || place.includes("🥈") ? "🥈"
                   : place.includes("3") || place.includes("🥉") ? "🥉"
-                  : null;
+                  : place ? place : null;
                 const catColor = (categoryColors as Record<string, string>)[ev.category] ?? "hsl(38 92% 50%)";
                 return (
                   <motion.div
@@ -351,7 +350,7 @@ export function PlayerProfilePanel() {
                     className="flex items-center gap-2.5"
                   >
                     <span className="text-base leading-none shrink-0 w-5 text-center">
-                      {placeBadge ?? <span className="text-[10px] text-muted-foreground/40">–</span>}
+                      {placeBadge ?? <span className="text-[10px] text-muted-foreground/60">#?</span>}
                     </span>
                     <span className="text-base leading-none shrink-0">{ev.emoji || "📅"}</span>
                     <div className="flex flex-col min-w-0 flex-1">
@@ -363,15 +362,16 @@ export function PlayerProfilePanel() {
                         {ev.category}
                       </span>
                     </div>
-                    {result ? (
-                      <span className="text-[10px] text-gold tabular-nums font-bold shrink-0">+{result.pts} pts</span>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground/40 shrink-0">—</span>
-                    )}
+                    <span className="text-[10px] text-gold tabular-nums font-bold shrink-0">+{result!.pts} pts</span>
                   </motion.div>
                 );
               })}
             </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-gold/10 bg-gold/[0.03] px-4 py-3 flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-gold/30 shrink-0" />
+            <span className="text-[10px] text-muted-foreground/40 italic">No event points yet</span>
           </div>
         )}
 

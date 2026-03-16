@@ -228,7 +228,18 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       .limit(50)
       .then(({ data, error }) => {
         if (error) { console.error('[Supabase] completed_puzzles fetch:', error.message); return; }
-        if (data) setCompletedPuzzles(data.map(rowToCompleted));
+        // Only replace local state if the DB actually has rows.
+        // An empty result would wipe locally-added entries that haven't been
+        // committed yet (or whose write failed), causing them to vanish from the UI.
+        if (data && data.length > 0) {
+          setCompletedPuzzles(prev => {
+            const dbEntries = data.map(rowToCompleted);
+            const dbIds = new Set(dbEntries.map(e => e.id));
+            // Keep any local-only entries (not yet in DB) appended at the end
+            const localOnly = prev.filter(p => !dbIds.has(p.id));
+            return [...dbEntries, ...localOnly];
+          });
+        }
       });
   }
 
@@ -317,6 +328,10 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   function persistCompleted(cp: CompletedPuzzle) {
     if (!isSupabaseConfigured) return;
     console.log('[Arena] persistCompleted →', cp.id, cp.timedOut ? 'timed-out' : 'solved');
+    // ignoreDuplicates: true → generates INSERT ... ON CONFLICT (id) DO NOTHING
+    // This only requires INSERT permission, not UPDATE.
+    // Plain upsert (ON CONFLICT DO UPDATE) requires UPDATE RLS too, which
+    // PostgREST pre-checks even for brand-new rows — causing silent failure.
     supabase.from('completed_puzzles').upsert({
       id: cp.id,
       question: cp.question,
@@ -329,15 +344,15 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       solved_by_team_id: cp.solvedByTeamId ?? null,
       completed_at: new Date(cp.completedAt).toISOString(),
       timed_out: cp.timedOut,
-    }, { onConflict: 'id' })
+    }, { onConflict: 'id', ignoreDuplicates: true })
       .then(({ error }) => {
         if (error) {
-          console.error('[Supabase] completed_puzzles upsert FAILED:', error.message, error);
+          console.error('[Supabase] completed_puzzles insert FAILED:', error.message, error);
         } else {
-          console.log('[Supabase] completed_puzzles upsert OK →', cp.id);
+          console.log('[Supabase] completed_puzzles insert OK →', cp.id);
         }
       })
-      .catch((err) => console.error('[Supabase] completed_puzzles upsert threw:', err));
+      .catch((err) => console.error('[Supabase] completed_puzzles insert threw:', err));
   }
 
   // ── Actions ───────────────────────────────────────────────────────────

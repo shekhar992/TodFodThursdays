@@ -123,7 +123,14 @@ export function LiveStandings() {
                 className="w-full flex items-center px-4 py-3 gap-4 hover:bg-accent/20 transition-colors text-left"
               >
                 <span className={`font-display text-sm font-bold w-8 shrink-0 ${rankColor}`}>
-                  {rank <= 3 ? ["🥇", "🥈", "🥉"][rank - 1] : String(rank).padStart(2, "0")}
+                  {rank <= 3 ? (
+                    <span
+                      className="inline-block"
+                      style={{ animation: `medal-shimmer ${2.8 + rank * 0.4}s ease-in-out infinite` }}
+                    >
+                      {["🥇", "🥈", "🥉"][rank - 1]}
+                    </span>
+                  ) : String(rank).padStart(2, "0")}
                 </span>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className={`flex h-8 w-8 items-center justify-center rounded-md text-base shrink-0 ${isGold ? "bg-gold/15 ring-1 ring-gold/30" : "bg-secondary"}`}>

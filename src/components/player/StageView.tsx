@@ -448,7 +448,9 @@ export function StageView() {
                         ? { duration: 3, repeat: Infinity, ease: "easeInOut" }
                         : {}}
                     >
-                      {medal}
+                      <span style={{ animation: `medal-shimmer ${3.2 + i * 0.7}s ease-in-out infinite`, display: "inline-block" }}>
+                        {medal}
+                      </span>
                     </motion.span>
                   ) : (
                     <span className="text-lg font-bold text-muted-foreground">#{i + 1}</span>

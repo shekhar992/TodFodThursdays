@@ -328,11 +328,11 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   function persistCompleted(cp: CompletedPuzzle) {
     if (!isSupabaseConfigured) return;
     console.log('[Arena] persistCompleted →', cp.id, cp.timedOut ? 'timed-out' : 'solved');
-    // ignoreDuplicates: true → generates INSERT ... ON CONFLICT (id) DO NOTHING
-    // This only requires INSERT permission, not UPDATE.
-    // Plain upsert (ON CONFLICT DO UPDATE) requires UPDATE RLS too, which
-    // PostgREST pre-checks even for brand-new rows — causing silent failure.
-    supabase.from('completed_puzzles').upsert({
+    // Plain INSERT — only requires INSERT RLS (with check true).
+    // upsert variants (even ignoreDuplicates) trigger PostgREST UPDATE RLS
+    // pre-checks which silently reject on this table's policy setup.
+    // 23505 = unique_violation → same puzzle row submitted twice, safe to ignore.
+    supabase.from('completed_puzzles').insert({
       id: cp.id,
       question: cp.question,
       answer: cp.answer,
@@ -344,10 +344,14 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       solved_by_team_id: cp.solvedByTeamId ?? null,
       completed_at: new Date(cp.completedAt).toISOString(),
       timed_out: cp.timedOut,
-    }, { onConflict: 'id', ignoreDuplicates: true })
+    })
       .then(({ error }) => {
         if (error) {
-          console.error('[Supabase] completed_puzzles insert FAILED:', error.message, error);
+          if (error.code === '23505') {
+            console.log('[Supabase] completed_puzzles already recorded (OK) →', cp.id);
+          } else {
+            console.error('[Supabase] completed_puzzles insert FAILED:', error.code, error.message);
+          }
         } else {
           console.log('[Supabase] completed_puzzles insert OK →', cp.id);
         }

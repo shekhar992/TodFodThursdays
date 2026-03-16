@@ -141,7 +141,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
           {f.pointsBreakdown.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
               <input value={row.place} onChange={e => setBP(i, "place", e.target.value)} className={`${inputCls} mt-0 flex-1`} placeholder="🥇 1st" />
-              <input type="number" value={row.pts} onChange={e => setBP(i, "pts", e.target.value)} className={`${inputCls} mt-0 w-20`} placeholder="pts" />
+              <input type="number" value={row.pts} onChange={e => setBP(i, "pts", e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={`${inputCls} mt-0 w-20`} placeholder="pts" />
               <button onClick={() => removeBP(i)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
             </div>
           ))}
@@ -468,6 +468,8 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                           min={0}
                           value={pts}
                           onChange={e => setPtsMap(p => ({ ...p, [team.id]: e.target.value }))}
+                          onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
+                          onWheel={e => e.currentTarget.blur()}
                           className="w-16 rounded-lg border border-border/70 bg-background/60 px-2 py-1 text-center text-sm font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors"
                           placeholder="0"
                         />

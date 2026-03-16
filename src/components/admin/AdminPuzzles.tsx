@@ -114,7 +114,7 @@ function LibraryCard({ pz, onLaunch, onSave, onDelete, isLocked, isEditing, onEd
           </div>
           <div>
             <label className={labelCls}>Points</label>
-            <input type="number" value={pts} onChange={e => setPts(e.target.value)} className={inputCls} min={5} max={500} />
+            <input type="number" value={pts} onChange={e => setPts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -240,7 +240,7 @@ function NewPuzzleCard({ onSave, onCancel }: { onSave: (pz: LibraryPuzzle) => vo
         </div>
         <div>
           <label className={labelCls}>Points</label>
-          <input type="number" value={pts} onChange={e => setPts(e.target.value)} className={inputCls} min={5} max={500} />
+          <input type="number" value={pts} onChange={e => setPts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -429,7 +429,7 @@ export function AdminPuzzles() {
                   </div>
                   <div>
                     <label className={labelCls}>Points</label>
-                    <input type="number" value={aePts} onChange={e => setAePts(e.target.value)} className={inputCls} min={5} max={500} />
+                    <input type="number" value={aePts} onChange={e => setAePts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

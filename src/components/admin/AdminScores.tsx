@@ -95,10 +95,12 @@ export function AdminScores() {
                         value={draft}
                         onChange={e => setDraft(e.target.value)}
                         onKeyDown={e => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); return; }
                           if (e.key === "Enter") commitEdit(team);
                           if (e.key === "Escape") cancelEdit();
                         }}
                         onBlur={() => commitEdit(team)}
+                        onWheel={e => e.currentTarget.blur()}
                         className="w-20 rounded-lg border border-gold/50 bg-gold/5 px-2 py-1 text-center font-carnival text-sm font-bold text-gold focus:outline-none focus:ring-1 focus:ring-gold/50"
                       />
                       {delta !== 0 && (

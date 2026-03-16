@@ -122,16 +122,18 @@ export function LiveStandings() {
                 onClick={() => toggle(team.id)}
                 className="w-full flex items-center px-4 py-3 gap-4 hover:bg-accent/20 transition-colors text-left"
               >
-                <span className={`font-display text-sm font-bold w-8 shrink-0 ${rankColor}`}>
+                <span className="w-8 shrink-0 relative flex items-center justify-center">
                   {rank <= 3 ? (
-                    <span className="relative inline-block">
-                      {["🥇", "🥈", "🥉"][rank - 1]}
+                    <>
+                      <span className="text-xl leading-none">{["🥇", "🥈", "🥉"][rank - 1]}</span>
                       <span
-                        className="pointer-events-none absolute -top-1.5 -right-1 text-[9px] leading-none text-gold"
-                        style={{ animation: `medal-sparkle ${2.2 + rank * 0.55}s ease-in-out infinite` }}
+                        className="pointer-events-none absolute -top-1.5 -right-0.5 text-[10px] leading-none text-gold"
+                        style={{ animation: `medal-sparkle ${2.4 + rank * 0.5}s linear infinite` }}
                       >✦</span>
-                    </span>
-                  ) : String(rank).padStart(2, "0")}
+                    </>
+                  ) : (
+                    <span className={`font-display text-sm font-bold ${rankColor}`}>{String(rank).padStart(2, "0")}</span>
+                  )}
                 </span>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className={`flex h-8 w-8 items-center justify-center rounded-md text-base shrink-0 ${isGold ? "bg-gold/15 ring-1 ring-gold/30" : "bg-secondary"}`}>

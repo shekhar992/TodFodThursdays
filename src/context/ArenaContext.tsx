@@ -305,6 +305,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   // ── Persist completed puzzle to Supabase ─────────────────────────────
   function persistCompleted(cp: CompletedPuzzle) {
     if (!isSupabaseConfigured) return;
+    console.log('[Arena] persistCompleted →', cp.id, cp.timedOut ? 'timed-out' : 'solved');
     supabase.from('completed_puzzles').upsert({
       id: cp.id,
       question: cp.question,
@@ -318,7 +319,14 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       completed_at: new Date(cp.completedAt).toISOString(),
       timed_out: cp.timedOut,
     }, { onConflict: 'id' })
-      .then(({ error }) => { if (error) console.error('[Supabase] completed_puzzles upsert:', error.message); });
+      .then(({ error }) => {
+        if (error) {
+          console.error('[Supabase] completed_puzzles upsert FAILED:', error.message, error);
+        } else {
+          console.log('[Supabase] completed_puzzles upsert OK →', cp.id);
+        }
+      })
+      .catch((err) => console.error('[Supabase] completed_puzzles upsert threw:', err));
   }
 
   // ── Actions ───────────────────────────────────────────────────────────

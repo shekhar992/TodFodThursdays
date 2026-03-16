@@ -29,6 +29,23 @@ function msUntilEventStart(dateStr: string): number {
   return Math.max(0, start - Date.now());
 }
 
+// Format seconds as HH:MM — for day-of countdown (not MM:SS)
+function formatHHMM(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// True if event date (local time) is today or in the future — guards against
+// events whose date was edited to the past but DB status not yet set to completed
+function isNotBeforeToday(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const eventDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return eventDay >= todayDay;
+}
+
 export function DynamicCallout({ onOpenPuzzle }: Props) {
   const { activePuzzle, events, completedPuzzles } = useArena();
   const { profile } = useAuth();
@@ -76,7 +93,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
   const showingPuzzleState = showChallenge || isScheduledPending || showSolvedCard;
   const nextEvent = !showingPuzzleState
     ? [...events]
-        .filter(e => !e.isPast && !e.hidden)
+        .filter(e => !e.isPast && !e.hidden && isNotBeforeToday(e.date))
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
     : null;
 
@@ -95,6 +112,9 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [todayEventWithTime?.id, todayEventWithTime?.date]);
+
+  // Reset expand state whenever the active next-event changes
+  useEffect(() => { setDayOfExpanded(false); }, [nextEvent?.id]);
 
   if (!showingPuzzleState && !liveEvent && !nextEvent) return null;
 
@@ -452,7 +472,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                         <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
                           style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>
                           <span className="font-carnival text-lg font-bold text-gold tabular-nums leading-none tracking-widest">
-                            {formatCountdown(startSecsLeft)}
+                            {formatHHMM(startSecsLeft)}
                           </span>
                           <span className="text-[9px] font-semibold uppercase tracking-wider text-gold/60 mt-0.5">starts in</span>
                         </div>

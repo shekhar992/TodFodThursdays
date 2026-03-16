@@ -460,14 +460,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      {nextEvent!.pointsBreakdown?.[0]?.pts && (
-                        <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
-                          style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>
-                          <span className="font-carnival text-lg font-bold text-gold tabular-nums leading-none">{nextEvent!.pointsBreakdown[0].pts}</span>
-                          <span className="text-[9px] font-semibold uppercase tracking-wider text-gold/60 mt-0.5">pts to win</span>
-                        </div>
-                      )}
-                      {/* Countdown to start time (only when event has a specific time set) */}
+                      {/* Countdown to start time (only when event has a specific time set) */}}
                       {todayEventWithTime && startSecsLeft > 0 && (
                         <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
                           style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>
@@ -528,13 +521,17 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                             <div>
                               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Points</p>
                               <div className="flex flex-wrap gap-2">
-                                {nextEvent!.pointsBreakdown.slice(0, 3).map((row, i) => (
-                                  <div key={i} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
-                                    style={{ borderColor: "hsl(43 93% 60% / 0.25)", background: "hsl(43 93% 60% / 0.08)" }}>
-                                    <span>{row.place}</span>
-                                    <span className="font-bold text-gold">+{row.pts} pts</span>
-                                  </div>
-                                ))}
+                                {nextEvent!.pointsBreakdown.slice(0, 3).map((row, i) => {
+                                  const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉";
+                                  const label = i === 0 ? "1st" : i === 1 ? "2nd" : "3rd";
+                                  return (
+                                    <div key={i} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
+                                      style={{ borderColor: "hsl(43 93% 60% / 0.25)", background: "hsl(43 93% 60% / 0.08)" }}>
+                                      <span>{medal} {label}</span>
+                                      <span className="font-bold text-gold">+{row.pts} pts</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}

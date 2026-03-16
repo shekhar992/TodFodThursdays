@@ -42,7 +42,11 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
 
   const setBP = (i: number, field: "place" | "pts", val: string | number) =>
     setF(p => ({ ...p, pointsBreakdown: p.pointsBreakdown.map((b, j) => j === i ? { ...b, [field]: field === "pts" ? Number(val) : val } : b) }));
-  const addBP = () => setF(p => ({ ...p, pointsBreakdown: [...p.pointsBreakdown, { place: "", pts: 0 }] }));
+  const addBP = () => setF(p => {
+    const i = p.pointsBreakdown.length;
+    const place = i === 0 ? "🥇 1st" : i === 1 ? "🥈 2nd" : i === 2 ? "🥉 3rd" : `#${i + 1}`;
+    return { ...p, pointsBreakdown: [...p.pointsBreakdown, { place, pts: 0 }] };
+  });
   const removeBP = (i: number) => setF(p => ({ ...p, pointsBreakdown: p.pointsBreakdown.filter((_, j) => j !== i) }));
 
   const canSave = f.title.trim() && f.date;
@@ -138,19 +142,30 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
           </button>
         </div>
         <div className="space-y-2">
-          {f.pointsBreakdown.map((row, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input value={row.place} onChange={e => setBP(i, "place", e.target.value)} className={`${inputCls} mt-0 flex-1`} placeholder="🥇 1st" />
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={row.pts} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setBP(i, "pts", v); }} className={`${inputCls} mt-0 w-20`} placeholder="pts" />
-              <button onClick={() => removeBP(i)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
-            </div>
-          ))}
+          {f.pointsBreakdown.map((row, i) => {
+            const placeLabel = i === 0 ? "🥇 1st" : i === 1 ? "🥈 2nd" : i === 2 ? "🥉 3rd" : `#${i + 1}`;
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-sm w-16 shrink-0 text-muted-foreground font-medium">{placeLabel}</span>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={row.pts} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setBP(i, "pts", v); }} className={`${inputCls} mt-0 flex-1`} placeholder="pts" />
+                {i >= 3
+                  ? <button onClick={() => removeBP(i)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
+                  : <span className="w-[22px] shrink-0" />}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         <button onClick={onCancel} className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-        <button onClick={() => canSave && onSave(f)} disabled={!canSave}
+        <button onClick={() => canSave && onSave({
+          ...f,
+          pointsBreakdown: f.pointsBreakdown.map((row, i) => ({
+            ...row,
+            place: i === 0 ? "🥇 1st" : i === 1 ? "🥈 2nd" : i === 2 ? "🥉 3rd" : `#${i + 1}`,
+          })),
+        })} disabled={!canSave}
           className="flex items-center gap-2 rounded-lg bg-gold px-5 py-2 text-sm font-bold text-background hover:bg-gold/90 disabled:opacity-40 transition-colors">
           Save Event
         </button>

@@ -221,63 +221,30 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   }
 
   function fetchCompletedPuzzles() {
+    // Completion data lives in the puzzles table itself.
+    // When a puzzle ends, is_active=false + completed_at=now() are set in one UPDATE.
     supabase
-      .from('completed_puzzles')
+      .from('puzzles')
       .select('*')
+      .eq('is_active', false)
+      .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
       .limit(50)
       .then(({ data, error }) => {
-        if (error) { console.error('[Supabase] completed_puzzles fetch:', error.message); return; }
-        // Only replace local state if the DB actually has rows.
-        // An empty result would wipe locally-added entries that haven't been
-        // committed yet (or whose write failed), causing them to vanish from the UI.
+        if (error) { console.error('[Supabase] completed puzzles fetch:', error.message); return; }
         if (data && data.length > 0) {
-          setCompletedPuzzles(prev => {
-            const dbEntries = data.map(rowToCompleted);
-            const dbIds = new Set(dbEntries.map(e => e.id));
-            // Keep any local-only entries (not yet in DB) appended at the end
-            const localOnly = prev.filter(p => !dbIds.has(p.id));
-            return [...dbEntries, ...localOnly];
-          });
+          setCompletedPuzzles(data.map(rowToCompleted));
         }
       });
   }
 
-  // ── Load completed puzzle history + subscribe to new entries ──────────
+  // ── Load completed puzzle history on mount ────────────────────────────
+  // Reads from puzzles WHERE completed_at IS NOT NULL (completion data is written
+  // directly onto the puzzle row via the same UPDATE that deactivates it).
+  // New completions are picked up by the re-fetch effect below when activePuzzle→null.
   useEffect(() => {
     if (!isSupabaseConfigured || isMockMode) return;
-
-    // Initial fetch
     fetchCompletedPuzzles();
-
-    // Realtime: pick up new/updated rows written by any client
-    // Listen for * (not just INSERT) because persistCompleted uses upsert which
-    // can produce UPDATE events when the row already exists.
-    const channel = supabase
-      .channel('completed-puzzles-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'completed_puzzles' },
-        (payload) => {
-          console.log('[Realtime] completed_puzzles event:', payload.eventType, (payload.new as any)?.id);
-          if (payload.eventType === 'DELETE') return;
-          const entry = rowToCompleted(payload.new);
-          setCompletedPuzzles(prev => {
-            const idx = prev.findIndex(p => p.id === entry.id);
-            if (idx >= 0) {
-              // Already exists (local writer or upsert→UPDATE) — replace with DB truth
-              const next = [...prev];
-              next[idx] = entry;
-              return next;
-            }
-            return [entry, ...prev];
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Realtime] completed_puzzles channel:', status);
-      });
-
-    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // ── Re-fetch completed puzzles when any puzzle ends ────────────────────
@@ -308,11 +275,13 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         points: prev.points, completedAt: Date.now(), timedOut: true,
       };
       setCompletedPuzzles(h => [expireEntry, ...h]);
-      persistCompleted(expireEntry);
       if (isSupabaseConfigured) {
-        supabase.from("puzzles").update({ is_active: false, timer_running: false })
-          .eq("id", prev.id)
-          .then(({ error }) => { if (error) console.error("[Supabase] expire deactivate:", error.message); });
+        // Write completion data in the same UPDATE that deactivates the puzzle
+        supabase.from("puzzles").update({
+          is_active: false, timer_running: false,
+          completed_at: new Date().toISOString(), timed_out: true,
+        }).eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] expire:", error.message); });
       }
       setActivePuzzle(null);
       setPuzzleSolved(false);
@@ -324,40 +293,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     return () => { if (expireTimerRef.current) clearTimeout(expireTimerRef.current); };
   }, [activePuzzle?.timerRunning, activePuzzle?.expiresAt]);
 
-  // ── Persist completed puzzle to Supabase ─────────────────────────────
-  function persistCompleted(cp: CompletedPuzzle) {
-    if (!isSupabaseConfigured) return;
-    console.log('[Arena] persistCompleted →', cp.id, cp.timedOut ? 'timed-out' : 'solved');
-    // Plain INSERT — only requires INSERT RLS (with check true).
-    // upsert variants (even ignoreDuplicates) trigger PostgREST UPDATE RLS
-    // pre-checks which silently reject on this table's policy setup.
-    // 23505 = unique_violation → same puzzle row submitted twice, safe to ignore.
-    supabase.from('completed_puzzles').insert({
-      id: cp.id,
-      question: cp.question,
-      answer: cp.answer,
-      points: cp.points,
-      awarded_points: cp.awardedPoints ?? null,
-      solved_by: cp.solvedBy ?? null,
-      solved_by_logo: cp.solvedByLogo ?? null,
-      solved_by_player: cp.solvedByPlayer ?? null,
-      solved_by_team_id: cp.solvedByTeamId ?? null,
-      completed_at: new Date(cp.completedAt).toISOString(),
-      timed_out: cp.timedOut,
-    })
-      .then(({ error }) => {
-        if (error) {
-          if (error.code === '23505') {
-            console.log('[Supabase] completed_puzzles already recorded (OK) →', cp.id);
-          } else {
-            console.error('[Supabase] completed_puzzles insert FAILED:', error.code, error.message);
-          }
-        } else {
-          console.log('[Supabase] completed_puzzles insert OK →', cp.id);
-        }
-      })
-      .catch((err) => console.error('[Supabase] completed_puzzles insert threw:', err));
-  }
+
 
   // ── Actions ───────────────────────────────────────────────────────────
   const addEvent = useCallback((event: Omit<ArenaEvent, "id">) => {
@@ -465,12 +401,12 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         points: prev.points, completedAt: Date.now(), timedOut: true,
       };
       setCompletedPuzzles(h => [stopEntry, ...h]);
-      persistCompleted(stopEntry);
-      // Deactivate in Supabase so Realtime doesn't restore the puzzle on all clients
       if (isSupabaseConfigured) {
-        supabase.from("puzzles").update({ is_active: false, timer_running: false })
-          .eq("id", prev.id)
-          .then(({ error }) => { if (error) console.error("[Supabase] stopPuzzleTimer deactivate:", error.message); });
+        supabase.from("puzzles").update({
+          is_active: false, timer_running: false,
+          completed_at: new Date().toISOString(), timed_out: true,
+        }).eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] stopPuzzleTimer:", error.message); });
       }
     }
     setActivePuzzle(null);
@@ -518,7 +454,6 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         completedAt: Date.now(), timedOut: false,
       };
       setCompletedPuzzles(h => [solvedEntry, ...h]);
-      persistCompleted(solvedEntry);
 
       // Auto-add to scoreboard
       if (solver?.teamId) {
@@ -526,13 +461,21 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         setSolvedTeams(prev => [...prev, solver!.teamId]);
       }
 
-      // Option A: close puzzle immediately — PuzzleModal caches last puzzle for its success state
+      // Deactivate + write all completion data in ONE UPDATE.
+      // This reuses the same authenticated path that already works for score + puzzle deactivation.
       setActivePuzzle(null);
-      // Deactivate in Supabase so Realtime doesn't restore the puzzle on all clients
       if (isSupabaseConfigured) {
-        supabase.from("puzzles").update({ is_active: false, timer_running: false })
-          .eq("id", prev.id)
-          .then(({ error }) => { if (error) console.error("[Supabase] solvePuzzle deactivate:", error.message); });
+        supabase.from("puzzles").update({
+          is_active: false, timer_running: false,
+          solved_by: solver?.teamName ?? null,
+          solved_by_logo: solver?.teamLogo ?? null,
+          solved_by_player: solver?.playerName ?? null,
+          solved_by_team_id: solver?.teamId ?? null,
+          awarded_points: awardedPoints,
+          completed_at: new Date().toISOString(),
+          timed_out: false,
+        }).eq("id", prev.id)
+          .then(({ error }) => { if (error) console.error("[Supabase] solvePuzzle:", error.message); });
       }
     }
     setPuzzleSolved(true);

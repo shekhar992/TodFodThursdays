@@ -43,6 +43,14 @@ type PuzzlesRow = {
   timer_running: boolean;
   started_at: string | null;   // ISO timestamp
   expires_at: string | null;   // ISO timestamp
+  // Completion fields — written in one UPDATE when puzzle ends
+  solved_by: string | null;
+  solved_by_logo: string | null;
+  solved_by_player: string | null;
+  solved_by_team_id: string | null;
+  awarded_points: number | null;
+  completed_at: string | null; // ISO timestamp — null means still active/not yet ended
+  timed_out: boolean;
   created_at: string;
 };
 

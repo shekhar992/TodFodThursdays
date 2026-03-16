@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, ChevronDown, ChevronUp, Trophy, Users, User } from "lucide-react";
+import { Crown, ChevronDown, ChevronUp, Trophy, Users, User, Calendar, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useArena } from "@/context/ArenaContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isMockMode } from "@/lib/mockAuth";
+import { categoryColors } from "@/data/mockData";
 
 interface TeamMember {
   id: string;
@@ -30,16 +31,28 @@ export function PlayerProfilePanel() {
 
   const teamColor = currentTeam?.color ?? "#00E5FF";
 
-  const teamWins = events.filter(
-    (e) => e.winnerTeamId === currentTeam?.id || e.winnerTeamName === currentTeam?.name
-  );
+  // All past events — sorted by date descending. Each entry includes the team's result.
+  const pastEvents = [...events]
+    .filter(e => e.isPast)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const teamEventHistory = pastEvents.map(ev => ({
+    event: ev,
+    result: ev.results?.find(r =>
+      (r.teamId && r.teamId === currentTeam?.id) ||
+      (!r.teamId && r.teamName && r.teamName === currentTeam?.name)
+    ) ?? null,
+  }));
+
+  // Score split: event pts vs puzzle pts
+  const eventPts = teamEventHistory.reduce((sum, { result }) => sum + (result?.pts ?? 0), 0);
   const puzzleWins = completedPuzzles.filter(
     (p) => !p.timedOut && (
       (p.solvedByTeamId && p.solvedByTeamId === currentTeam?.id) ||
       (!p.solvedByTeamId && p.solvedBy === currentTeam?.name)
     )
   );
+  const puzzlePts = puzzleWins.reduce((sum, p) => sum + (p.awardedPoints ?? p.points), 0);
 
   const initials = profile?.display_name
     ? profile.display_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -162,10 +175,6 @@ export function PlayerProfilePanel() {
                 <span className="text-[11px] font-bold tabular-nums" style={{ color: teamColor }}>
                   {currentTeam.score} <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">pts</span>
                 </span>
-                <span className="text-border/60 text-[10px]">·</span>
-                <span className="text-[11px] font-bold tabular-nums text-gold">
-                  {currentTeam.wins} <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">wins</span>
-                </span>
               </div>
             </div>
           </div>
@@ -234,9 +243,9 @@ export function PlayerProfilePanel() {
             style={{ borderBottom: `1px solid ${teamColor}15` }}
           >
             {[
-              { label: "Points", value: currentTeam.score, color: teamColor },
-              { label: "Wins",   value: currentTeam.wins,  color: "hsl(43 93% 60%)" },
-              { label: "Events", value: teamWins.length,   color: "hsl(288 80% 72%)" },
+              { label: "Points",    value: currentTeam.score, color: teamColor },
+              { label: "Event pts", value: eventPts,          color: "hsl(43 93% 60%)" },
+              { label: "Puzzle pts",value: puzzlePts,         color: "hsl(288 80% 72%)" },
             ].map(({ label, value, color }, i) => (
               <div
                 key={label}
@@ -312,47 +321,70 @@ export function PlayerProfilePanel() {
           </div>
         </div>
 
-        {/* ──────── Event wins card ──────── */}
-        {teamWins.length > 0 && (
+        {/* ──────── Event history card ──────── */}
+        {teamEventHistory.length > 0 && (
           <div className="rounded-2xl border border-gold/20 bg-gold/5 overflow-hidden">
             <div className="px-4 py-3 border-b border-gold/15 flex items-center gap-2">
-              <Trophy className="h-3.5 w-3.5 text-gold" />
+              <Calendar className="h-3.5 w-3.5 text-gold" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-gold">
-                Event Wins
+                Events
+              </span>
+              <span className="ml-auto text-[10px] font-bold tabular-nums text-gold/70">
+                {eventPts > 0 ? `+${eventPts} pts` : ""}
               </span>
             </div>
             <div className="px-4 py-3 flex flex-col gap-2">
-              {teamWins.slice(0, 4).map((ev, i) => (
-                <motion.div
-                  key={ev.id}
-                  initial={{ x: -6, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="flex items-center gap-2.5"
-                >
-                  <span className="text-base leading-none shrink-0">{ev.emoji}</span>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-medium truncate text-foreground">{ev.title}</span>
-                    {ev.winnerPoints && (
-                      <span className="text-[10px] text-gold tabular-nums">+{ev.winnerPoints} pts</span>
+              {teamEventHistory.map(({ event: ev, result }, i) => {
+                // Determine placement badge
+                const place = result?.place ?? "";
+                const placeBadge = place.includes("1") || place.includes("🥇") ? "🥇"
+                  : place.includes("2") || place.includes("🥈") ? "🥈"
+                  : place.includes("3") || place.includes("🥉") ? "🥉"
+                  : null;
+                const catColor = (categoryColors as Record<string, string>)[ev.category] ?? "hsl(38 92% 50%)";
+                return (
+                  <motion.div
+                    key={ev.id}
+                    initial={{ x: -6, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-2.5"
+                  >
+                    <span className="text-base leading-none shrink-0 w-5 text-center">
+                      {placeBadge ?? <span className="text-[10px] text-muted-foreground/40">–</span>}
+                    </span>
+                    <span className="text-base leading-none shrink-0">{ev.emoji || "📅"}</span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-xs font-medium truncate text-foreground">{ev.title}</span>
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-widest px-1 rounded"
+                        style={{ color: catColor }}
+                      >
+                        {ev.category}
+                      </span>
+                    </div>
+                    {result ? (
+                      <span className="text-[10px] text-gold tabular-nums font-bold shrink-0">+{result.pts} pts</span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/40 shrink-0">—</span>
                     )}
-                  </div>
-                </motion.div>
-              ))}
-              {teamWins.length > 4 && (
-                <span className="text-[10px] text-muted-foreground">+{teamWins.length - 4} more wins</span>
-              )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* ──────── Puzzle wins card ──────── */}
+        {/* ──────── Puzzle solves card ──────── */}
         {puzzleWins.length > 0 && (
           <div className="rounded-2xl border border-[hsl(288_80%_62%/0.2)] bg-[hsl(288_80%_62%/0.05)] overflow-hidden">
             <div className="px-4 py-3 border-b border-[hsl(288_80%_62%/0.15)] flex items-center gap-2">
-              <span className="text-base leading-none">🧩</span>
+              <Zap className="h-3.5 w-3.5 text-[hsl(288_80%_72%)]" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[hsl(288_80%_72%)]">
-                Puzzle Wins
+                Puzzle Solves
+              </span>
+              <span className="ml-auto text-[10px] font-bold tabular-nums text-[hsl(288_80%_72%/0.7)]">
+                +{puzzlePts} pts
               </span>
             </div>
             <div className="px-4 py-3 flex flex-col gap-2">
@@ -378,7 +410,7 @@ export function PlayerProfilePanel() {
                 </motion.div>
               ))}
               {puzzleWins.length > 4 && (
-                <span className="text-[10px] text-muted-foreground">+{puzzleWins.length - 4} more puzzle wins</span>
+                <span className="text-[10px] text-muted-foreground">+{puzzleWins.length - 4} more puzzle solves</span>
               )}
             </div>
           </div>

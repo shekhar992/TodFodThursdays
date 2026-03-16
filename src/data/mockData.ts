@@ -5,7 +5,6 @@ export interface Team {
   id: string;
   name: string;
   score: number;
-  wins: number;
   color: string;
   logo: string;
 }
@@ -25,6 +24,13 @@ export interface Event {
   date: string;
   status: 'upcoming' | 'live' | 'completed';
   participants?: number;
+  // Lifecycle fields (from migration 007)
+  winner_team_id?: string | null;
+  winner_team_name?: string | null;
+  winner_team_logo?: string | null;
+  winner_points?: number | null;
+  results?: Array<{ place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string }>;
+  media_urls?: string[];
 }
 
 export interface Puzzle {

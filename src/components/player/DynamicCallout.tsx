@@ -22,6 +22,13 @@ function isToday(dateStr: string) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
+// Returns ms until event start (0 if no time specified or already started)
+function msUntilEventStart(dateStr: string): number {
+  if (!dateStr.includes('T')) return 0;
+  const start = new Date(dateStr).getTime();
+  return Math.max(0, start - Date.now());
+}
+
 export function DynamicCallout({ onOpenPuzzle }: Props) {
   const { activePuzzle, events, completedPuzzles } = useArena();
   const { profile } = useAuth();
@@ -73,7 +80,23 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
     : null;
 
-  if (!showingPuzzleState && !nextEvent) return null;
+  // ── Live event (admin marked event 'live') ──
+  const liveEvent = !showingPuzzleState
+    ? events.find(e => e.status === 'live' && !e.hidden) ?? null
+    : null;
+
+  // ── Today countdown to event start ──
+  const [startSecsLeft, setStartSecsLeft] = useState<number>(0);
+  const todayEventWithTime = nextEvent && isToday(nextEvent.date) && nextEvent.date.includes('T') ? nextEvent : null;
+  useEffect(() => {
+    if (!todayEventWithTime) return;
+    const tick = () => setStartSecsLeft(Math.max(0, Math.ceil(msUntilEventStart(todayEventWithTime.date) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [todayEventWithTime?.id, todayEventWithTime?.date]);
+
+  if (!showingPuzzleState && !liveEvent && !nextEvent) return null;
 
   const timerUrgent  = secondsLeft !== null && secondsLeft <= 15;
   const timerWarning = secondsLeft !== null && secondsLeft > 15 && secondsLeft <= 30;
@@ -321,6 +344,58 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
               </div>
             </div>
           </motion.div>
+        ) : liveEvent ? (
+          /* ── Event is LIVE ── */
+          <motion.div
+            key="live-event"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div
+              className="relative rounded-2xl p-px"
+              style={{ background: "linear-gradient(135deg, hsl(0 80% 55%), hsl(0 70% 45%), hsl(0 80% 55%))" }}
+            >
+              <div className="relative overflow-hidden rounded-2xl bg-[hsl(248_32%_9%)] px-6 py-5">
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{ background: "radial-gradient(ellipse 80% 60% at 50% 50%, hsl(0 80% 55% / 0.10) 0%, transparent 70%)" }}
+                />
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
+                      style={{ background: "hsl(0 80% 55% / 0.15)", border: "1px solid hsl(0 80% 55% / 0.4)", boxShadow: "0 0 20px hsl(0 80% 55% / 0.35)" }}
+                    >
+                      {liveEvent.emoji || "🎉"}
+                    </div>
+                    <div>
+                      <div className="mb-0.5 flex items-center gap-2">
+                        <motion.span
+                          animate={{ opacity: [1, 0.5, 1] }}
+                          transition={{ duration: 1.2, repeat: Infinity }}
+                          className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[0.18em] uppercase text-red-400"
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                          Event is Live Now
+                        </motion.span>
+                      </div>
+                      <p className="font-carnival text-xl text-foreground tracking-wide">{liveEvent.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {liveEvent.category}{liveEvent.format ? ` · ${liveEvent.format}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold shrink-0"
+                    style={{ background: "hsl(0 80% 55% / 0.10)", border: "1px solid hsl(0 80% 55% / 0.3)", color: "hsl(0 80% 70%)" }}
+                  >
+                    Check the scoreboard ↓
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         ) : nextEvent && isToday(nextEvent.date) ? (
           /* ── Day-of: compact card with collapsible details ── */
           <motion.div
@@ -371,6 +446,21 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                           <span className="font-carnival text-lg font-bold text-gold tabular-nums leading-none">{nextEvent!.pointsBreakdown[0].pts}</span>
                           <span className="text-[9px] font-semibold uppercase tracking-wider text-gold/60 mt-0.5">pts to win</span>
                         </div>
+                      )}
+                      {/* Countdown to start time (only when event has a specific time set) */}
+                      {todayEventWithTime && startSecsLeft > 0 && (
+                        <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
+                          style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>
+                          <span className="font-carnival text-lg font-bold text-gold tabular-nums leading-none tracking-widest">
+                            {formatCountdown(startSecsLeft)}
+                          </span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-gold/60 mt-0.5">starts in</span>
+                        </div>
+                      )}
+                      {todayEventWithTime && startSecsLeft === 0 && (
+                        <span className="rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-400/10 border border-red-400/20">
+                          Starting now!
+                        </span>
                       )}
                       <button
                         onClick={() => setDayOfExpanded(v => !v)}

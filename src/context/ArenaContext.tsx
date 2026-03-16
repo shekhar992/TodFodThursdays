@@ -14,7 +14,6 @@ export interface Team {
   logo: string;
   color?: string;
   score: number;
-  wins: number;
 }
 
 export interface ArenaEvent {
@@ -123,7 +122,30 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   );
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [solvedTeams, setSolvedTeams] = useState<string[]>([]);
-  const [stageMode, setStageModeActive] = useState(false);
+  const [stageMode, setStageModeRaw] = useState(false);
+
+  // ── Stage mode: cross-browser sync via arena_settings ─────────────────
+  // Admin toggle writes to DB → Realtime fires on all player browsers
+  const setStageModeActive = useCallback((active: boolean) => {
+    setStageModeRaw(active);
+    if (isSupabaseConfigured && !isMockMode) {
+      supabase.from('arena_settings').update({ stage_mode: active, updated_at: new Date().toISOString() }).eq('id', 1)
+        .then(({ error }) => { if (error) console.error('[Supabase] setStageModeActive:', error.message); });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || isMockMode) return;
+    // Load initial value
+    supabase.from('arena_settings').select('stage_mode').eq('id', 1).single()
+      .then(({ data }) => { if (data) setStageModeRaw(data.stage_mode); });
+    // Realtime subscription — fires on all browsers when admin toggles
+    const ch = supabase.channel('arena-settings-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'arena_settings' },
+        (payload) => { setStageModeRaw((payload.new as any).stage_mode); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   // Stable refs so callbacks don't go stale
   const activePuzzleRef = useRef<Puzzle | null>(null);
@@ -135,7 +157,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     if (rawTeams.length) {
       setTeams(rawTeams.map(t => ({
         id: t.id, name: t.name, logo: (t as any).logo ?? "⚡",
-        score: t.score, wins: t.wins,
+        score: t.score,
       })));
     }
   }, [rawTeams]);
@@ -153,27 +175,48 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const mapEvent = (e: any, isPast: boolean): ArenaEvent => {
       const d = EVENT_DETAILS[e.id];
+      // DB status → ArenaEvent status  ('upcoming' → 'scheduled', 'live' → 'live', 'completed' → 'completed')
+      const dbStatus = e.status as string;
+      const status: ArenaEvent['status'] =
+        dbStatus === 'live' ? 'live' :
+        dbStatus === 'completed' ? 'completed' :
+        'scheduled';
+      const resolvedIsPast = status === 'completed' || isPast;
+
+      // Results: prefer DB (live events), fall back to EVENT_DETAILS seed data
+      const dbResults: ArenaEvent['results'] = Array.isArray(e.results) && e.results.length > 0
+        ? e.results
+        : (resolvedIsPast ? (d?.results?.map((r: any) => ({ place: r.place, pts: r.pts, teamName: r.teamName, teamLogo: r.teamLogo })) ?? []) : []);
+
+      // Memories: merge DB media_urls + legacy image_url
+      const dbMediaUrls: string[] = Array.isArray(e.media_urls) ? e.media_urls : [];
+      const memories: string[] | undefined = resolvedIsPast
+        ? [e.image || e.image_url, ...dbMediaUrls].filter(Boolean).concat(
+            dbMediaUrls.length === 0 ? (d?.memories ?? []) : []
+          ).filter(Boolean) as string[]
+        : undefined;
+
       return {
         id: e.id, title: e.title, category: e.category, date: e.date,
-        description: e.description, isPast, image: e.image || undefined,
+        description: e.description, isPast: resolvedIsPast,
+        image: e.image || e.image_url || undefined,
         emoji: d?.emoji ?? "📅", format: d?.format ?? "",
         duration: d?.duration ?? "", rules: d?.rules ?? [],
         pointsBreakdown: d?.pointsBreakdown ?? [], hidden: false,
-        // Populate winner from EVENT_DETAILS for seeded past events
-        winnerTeamName: isPast ? d?.winner : undefined,
-        winnerTeamLogo: isPast ? d?.winnerLogo : undefined,
-        winnerPoints: isPast ? (d?.pointsBreakdown?.[0]?.pts) : undefined,
-        completedAt: isPast ? new Date(e.date).getTime() : undefined,
-        status: isPast ? 'completed' : 'scheduled',
-        results: isPast ? (d?.results?.map(r => ({ place: r.place, pts: r.pts, teamName: r.teamName, teamLogo: r.teamLogo })) ?? []) : [],
-        // memories: prefer Supabase image_url, fall back to mock seed images
-        memories: isPast
-          ? [e.image].filter(Boolean).concat(d?.memories ?? []).filter(Boolean) as string[]
-          : undefined,
+        status,
+        // Winner: prefer DB columns, fall back to EVENT_DETAILS seed data
+        winnerTeamId: e.winner_team_id ?? undefined,
+        winnerTeamName: e.winner_team_name ?? (resolvedIsPast ? d?.winner : undefined),
+        winnerTeamLogo: e.winner_team_logo ?? (resolvedIsPast ? d?.winnerLogo : undefined),
+        winnerPoints: e.winner_points ?? (resolvedIsPast ? (d?.pointsBreakdown?.[0]?.pts) : undefined),
+        completedAt: resolvedIsPast ? (e.completed_at ? new Date(e.completed_at).getTime() : new Date(e.date).getTime()) : undefined,
+        results: dbResults,
+        memories,
       };
     };
     const past = highlightEvents.map(e => mapEvent(e, true));
     const upcoming = upcomingEvents.map(e => mapEvent(e, false));
+    // Also handle live events: useEvents splits by status, live events go into upcomingEvents
     if (past.length || upcoming.length) setEvents([...upcoming, ...past]);
   }, [highlightEvents, upcomingEvents]);
 
@@ -304,7 +347,9 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         id, title: event.title, description: event.description || "",
         category: event.category || "General", date: event.date,
         status: event.isPast ? "completed" : "upcoming",
-        image_url: null, cloudinary_public_id: null, participants: null,
+        image_url: event.image || null, cloudinary_public_id: null, participants: null,
+        results: [], media_urls: [],
+        winner_team_id: null, winner_team_name: null, winner_team_logo: null, winner_points: null,
       }).then(({ error }) => { if (error) console.error("[Supabase] addEvent:", error.message); });
     }
   }, []);
@@ -320,6 +365,38 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       }
       return merged;
     }));
+    // Persist to Supabase — map ArenaEvent fields → DB columns
+    if (isSupabaseConfigured && !isMockMode) {
+      const dbUpdate: Record<string, any> = {};
+      if ('title'       in updates) dbUpdate.title = updates.title;
+      if ('description' in updates) dbUpdate.description = updates.description;
+      if ('category'    in updates) dbUpdate.category = updates.category;
+      if ('date'        in updates) dbUpdate.date = updates.date;
+      if ('image'       in updates) dbUpdate.image_url = updates.image ?? null;
+      if ('status'      in updates) {
+        dbUpdate.status = updates.status === 'scheduled' ? 'upcoming' : (updates.status ?? 'upcoming');
+      }
+      if ('isPast' in updates) {
+        // isPast=true without explicit status → completed
+        if (updates.isPast && !('status' in updates)) dbUpdate.status = 'completed';
+        if (!updates.isPast && !('status' in updates)) dbUpdate.status = 'upcoming';
+      }
+      if ('winnerTeamId'   in updates) dbUpdate.winner_team_id   = updates.winnerTeamId   ?? null;
+      if ('winnerTeamName' in updates) dbUpdate.winner_team_name = updates.winnerTeamName ?? null;
+      if ('winnerTeamLogo' in updates) dbUpdate.winner_team_logo = updates.winnerTeamLogo ?? null;
+      if ('winnerPoints'   in updates) dbUpdate.winner_points    = updates.winnerPoints   ?? null;
+      if ('results'        in updates) dbUpdate.results   = updates.results   ?? [];
+      if ('memories'       in updates) {
+        // memories[0] is cover image_url; rest go into media_urls
+        const mems = updates.memories ?? [];
+        dbUpdate.image_url  = mems[0] ?? null;
+        dbUpdate.media_urls = mems.slice(1);
+      }
+      if (Object.keys(dbUpdate).length > 0) {
+        supabase.from('events').update(dbUpdate).eq('id', id)
+          .then(({ error }) => { if (error) console.error('[Supabase] updateEvent:', error.message); });
+      }
+    }
   }, []);
 
   const deleteEvent = useCallback((id: string) => {

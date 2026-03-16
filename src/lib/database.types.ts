@@ -5,7 +5,6 @@ type TeamsRow = {
   id: string;
   name: string;
   score: number;
-  wins: number;
   color: string;
   logo: string;
   created_at: string;
@@ -29,6 +28,19 @@ type EventsRow = {
   status: 'upcoming' | 'live' | 'completed';
   participants: number | null;
   created_at: string;
+  // Lifecycle fields added in migration 007
+  winner_team_id: string | null;
+  winner_team_name: string | null;
+  winner_team_logo: string | null;
+  winner_points: number | null;
+  results: Array<{ place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string }>;
+  media_urls: string[];
+};
+
+type ArenaSettingsRow = {
+  id: 1;
+  stage_mode: boolean;
+  updated_at: string;
 };
 
 type PuzzlesRow = {
@@ -108,6 +120,12 @@ export type Database = {
         Row: EventsRow;
         Insert: Omit<EventsRow, 'created_at'>;
         Update: Partial<Omit<EventsRow, 'created_at'>>;
+        Relationships: [];
+      };
+      arena_settings: {
+        Row: ArenaSettingsRow;
+        Insert: Partial<ArenaSettingsRow>;
+        Update: Partial<ArenaSettingsRow>;
         Relationships: [];
       };
       puzzles: {

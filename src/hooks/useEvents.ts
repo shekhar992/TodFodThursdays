@@ -20,6 +20,12 @@ function rowToEvent(row: EventRow): Event {
     date: row.date,
     status: row.status,
     participants: row.participants ?? undefined,
+    winner_team_id: row.winner_team_id ?? null,
+    winner_team_name: row.winner_team_name ?? null,
+    winner_team_logo: row.winner_team_logo ?? null,
+    winner_points: row.winner_points ?? null,
+    results: (row.results as Event['results']) ?? [],
+    media_urls: (row.media_urls as string[]) ?? [],
   };
 }
 

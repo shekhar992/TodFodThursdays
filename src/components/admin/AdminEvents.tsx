@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useArena, ArenaEvent, Team } from "@/context/ArenaContext";
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, X, ChevronDown, ChevronUp, Trophy, Play, Square, Zap } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, X, ChevronDown, ChevronUp, Trophy, Play, Square, Zap, Images } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { categoryColors } from "@/data/mockData";
 import { EmojiPicker } from "./EmojiPicker";
@@ -24,7 +24,12 @@ const inputCls = "mt-1 w-full rounded-lg border border-border/70 bg-background/6
 const labelCls = "block text-xs font-semibold uppercase tracking-wider text-muted-foreground";
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  // Handle both "2026-04-15" and "2026-04-15T18:30" formats
+  const parsed = new Date(d);
+  if (isNaN(parsed.getTime())) return d;
+  const hasTime = d.includes('T') && !d.endsWith('T00:00');
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
+    (hasTime ? ' ' + parsed.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true }) : '');
 }
 
 function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (f: FormData) => void; onCancel: () => void }) {
@@ -68,8 +73,8 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
             </select>
           </div>
           <div>
-            <label className={labelCls}>Date *</label>
-            <input type="date" value={f.date} onChange={e => set("date", e.target.value)} className={inputCls} />
+            <label className={labelCls}>Date &amp; Time *</label>
+            <input type="datetime-local" value={f.date} onChange={e => set("date", e.target.value)} className={inputCls} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -154,7 +159,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
   );
 }
 
-function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, onEndEvent, onMarkComplete }: {
+function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, onEndEvent, onMarkComplete, onUpdateMemories }: {
   event: ArenaEvent;
   teams: Team[];
   onEdit: () => void;
@@ -163,9 +168,11 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
   onGoLive: () => void;
   onEndEvent: () => void;
   onMarkComplete: (results: ResultEntry[]) => void;
+  onUpdateMemories: (memories: string[]) => void;
 }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [showPhotos, setShowPhotos] = useState(false);
 
   // Per-team points map: teamId → pts string
   const [ptsMap, setPtsMap] = useState<Record<string, string>>(() => {
@@ -298,7 +305,21 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                 <Square className="h-3 w-3 fill-current" /> End
               </button>
             )}
-            {/* Trophy — view/edit results */}
+            {/* 📷 Photos — completed/past events */}
+            {isCompleted && (
+              <button
+                onClick={() => setShowPhotos(v => !v)}
+                title="Upload event photos"
+                className={`rounded-md p-1.5 transition-colors ${
+                  showPhotos || (event.memories && event.memories.length > 0)
+                    ? "text-sky-400 bg-sky-400/10"
+                    : "text-muted-foreground hover:text-sky-400 hover:bg-sky-400/10"
+                }`}
+              >
+                <Images className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {/* Trophy — view/edit results */}}
             <button
               onClick={handleOpenResults}
               title="View / edit results"
@@ -328,6 +349,52 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
         </div>
         {event.format && <p className="mt-1.5 text-xs text-muted-foreground ml-9">{event.format}</p>}
       </div>
+
+      {/* ── Photos panel ──────────────────────────────────── */}
+      <AnimatePresence>
+        {showPhotos && isCompleted && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border/40 bg-card/60 px-4 pt-4 pb-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Event Photos</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Upload memories from this event. Each upload is appended.</p>
+                </div>
+                <button onClick={() => setShowPhotos(false)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Existing photos grid */}
+              {(event.memories ?? []).length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {(event.memories ?? []).map((url, i) => (
+                    <div key={i} className="relative group aspect-video rounded-lg overflow-hidden bg-muted/30">
+                      <img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload new photo */}
+              <MediaUploader
+                value=""
+                onChange={url => {
+                  if (!url) return;
+                  const existing = event.memories ?? [];
+                  onUpdateMemories([...existing, url]);
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Results panel ─────────────────────────────────────── */}
       <AnimatePresence>
@@ -498,7 +565,7 @@ export function AdminEvents() {
           <div className="space-y-2">
             {upcoming.map(e => (
               <motion.div key={e.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <EventCard event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} />
+                <EventCard event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} onUpdateMemories={(mems) => updateEvent(e.id, { memories: mems })} />
               </motion.div>
             ))}
           </div>
@@ -517,7 +584,7 @@ export function AdminEvents() {
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="space-y-2">
                   {past.map(e => (
-                    <EventCard key={e.id} event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} />
+                    <EventCard key={e.id} event={e} teams={teams} onEdit={() => openEdit(e)} onDelete={() => deleteEvent(e.id)} onToggleHidden={() => updateEvent(e.id, { hidden: !e.hidden })} onGoLive={() => updateEvent(e.id, { status: 'live' })} onEndEvent={() => updateEvent(e.id, { status: 'completed' })} onMarkComplete={(results) => handleMarkComplete(e.id, results)} onUpdateMemories={(mems) => updateEvent(e.id, { memories: mems })} />
                   ))}
                 </div>
               </motion.div>

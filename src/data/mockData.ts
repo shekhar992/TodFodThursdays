@@ -31,6 +31,14 @@ export interface Event {
   winner_points?: number | null;
   results?: Array<{ place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string }>;
   media_urls?: string[];
+  // Rich fields persisted in events.data jsonb (migration 008)
+  data?: {
+    emoji?: string;
+    format?: string;
+    duration?: string;
+    rules?: string[];
+    pointsBreakdown?: { place: string; pts: number }[];
+  } | null;
 }
 
 export interface Puzzle {

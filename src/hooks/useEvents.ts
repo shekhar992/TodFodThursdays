@@ -26,6 +26,7 @@ function rowToEvent(row: EventRow): Event {
     winner_points: row.winner_points ?? null,
     results: (row.results as Event['results']) ?? [],
     media_urls: (row.media_urls as string[]) ?? [],
+    data: (row.data ?? null) as Event['data'],
   };
 }
 

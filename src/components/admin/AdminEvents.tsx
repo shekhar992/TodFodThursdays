@@ -141,7 +141,7 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
           {f.pointsBreakdown.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
               <input value={row.place} onChange={e => setBP(i, "place", e.target.value)} className={`${inputCls} mt-0 flex-1`} placeholder="🥇 1st" />
-              <input type="number" value={row.pts} onChange={e => setBP(i, "pts", e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={`${inputCls} mt-0 w-20`} placeholder="pts" />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={row.pts} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setBP(i, "pts", v); }} className={`${inputCls} mt-0 w-20`} placeholder="pts" />
               <button onClick={() => removeBP(i)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"><X className="h-3.5 w-3.5" /></button>
             </div>
           ))}
@@ -436,13 +436,14 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                 </p>
               )}
 
-              {/* Per-team input grid */}
+              {/* Per-team input grid — sorted by current score so 1st place is at top */}
               <div className="space-y-2">
-                {teams.map(team => {
+                {[...teams].sort((a, b) => b.score - a.score).map((team, idx) => {
                   const pts = ptsMap[team.id] ?? "0";
                   const ptsNum = parseInt(pts) || 0;
                   return (
                     <div key={team.id} className="flex items-center gap-3 rounded-lg px-3 py-2 bg-background/40 border border-border/30">
+                      <span className="text-[10px] text-muted-foreground shrink-0 w-4">#{idx + 1}</span>
                       <span className="text-base shrink-0">{team.logo}</span>
                       <span className="flex-1 text-sm font-medium text-foreground truncate">{team.name}</span>
                       <span className="text-[10px] text-muted-foreground shrink-0 w-16 text-right tabular-nums">
@@ -464,12 +465,11 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                           </button>
                         ))}
                         <input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={pts}
-                          onChange={e => setPtsMap(p => ({ ...p, [team.id]: e.target.value }))}
-                          onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }}
-                          onWheel={e => e.currentTarget.blur()}
+                          onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setPtsMap(p => ({ ...p, [team.id]: v })); }}
                           className="w-16 rounded-lg border border-border/70 bg-background/60 px-2 py-1 text-center text-sm font-bold tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors"
                           placeholder="0"
                         />

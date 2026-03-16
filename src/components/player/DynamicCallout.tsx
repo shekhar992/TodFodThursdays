@@ -528,7 +528,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                             <div>
                               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Points</p>
                               <div className="flex flex-wrap gap-2">
-                                {nextEvent!.pointsBreakdown.map((row, i) => (
+                                {nextEvent!.pointsBreakdown.slice(0, 3).map((row, i) => (
                                   <div key={i} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
                                     style={{ borderColor: "hsl(43 93% 60% / 0.25)", background: "hsl(43 93% 60% / 0.08)" }}>
                                     <span>{row.place}</span>

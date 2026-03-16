@@ -114,7 +114,7 @@ function LibraryCard({ pz, onLaunch, onSave, onDelete, isLocked, isEditing, onEd
           </div>
           <div>
             <label className={labelCls}>Points</label>
-            <input type="number" value={pts} onChange={e => setPts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
+            <input type="text" inputMode="numeric" pattern="[0-9]*" value={pts} onChange={e => setPts(e.target.value.replace(/[^0-9]/g, ''))} className={inputCls} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -240,7 +240,7 @@ function NewPuzzleCard({ onSave, onCancel }: { onSave: (pz: LibraryPuzzle) => vo
         </div>
         <div>
           <label className={labelCls}>Points</label>
-          <input type="number" value={pts} onChange={e => setPts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
+          <input type="text" inputMode="numeric" pattern="[0-9]*" value={pts} onChange={e => setPts(e.target.value.replace(/[^0-9]/g, ''))} className={inputCls} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -429,7 +429,7 @@ export function AdminPuzzles() {
                   </div>
                   <div>
                     <label className={labelCls}>Points</label>
-                    <input type="number" value={aePts} onChange={e => setAePts(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault(); }} onWheel={e => e.currentTarget.blur()} className={inputCls} min={5} max={500} />
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={aePts} onChange={e => setAePts(e.target.value.replace(/[^0-9]/g, ''))} className={inputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

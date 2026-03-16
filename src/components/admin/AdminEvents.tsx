@@ -392,19 +392,24 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                   {(event.memories ?? []).map((url, i) => (
                     <div key={i} className="relative group aspect-video rounded-lg overflow-hidden bg-muted/30">
                       <img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => onUpdateMemories((event.memories ?? []).filter((_, j) => j !== i))}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-background/80 p-1 text-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all shadow-sm"
+                        title="Remove photo"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Upload new photo */}
+              {/* Upload new photos */}
               <MediaUploader
                 value=""
-                onChange={url => {
-                  if (!url) return;
-                  const existing = event.memories ?? [];
-                  onUpdateMemories([...existing, url]);
-                }}
+                onChange={url => { if (!url) return; onUpdateMemories([...(event.memories ?? []), url]); }}
+                onMultiChange={urls => { if (!urls.length) return; onUpdateMemories([...(event.memories ?? []), ...urls]); }}
               />
             </div>
           </motion.div>

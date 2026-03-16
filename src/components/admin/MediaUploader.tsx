@@ -5,6 +5,7 @@ import { Upload, X, Image, Video, Loader2, AlertCircle } from "lucide-react";
 interface Props {
   value?: string;
   onChange: (url: string) => void;
+  onMultiChange?: (urls: string[]) => void;
   folder?: string;
 }
 
@@ -12,8 +13,9 @@ function isVideoUrl(url: string) {
   return /\.(mp4|webm|mov|avi|m4v)(\?|$)/i.test(url);
 }
 
-export function MediaUploader({ value, onChange, folder = "tft2-events" }: Props) {
+export function MediaUploader({ value, onChange, onMultiChange, folder = "tft2-events" }: Props) {
   const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,11 +36,30 @@ export function MediaUploader({ value, onChange, folder = "tft2-events" }: Props
     [folder, onChange]
   );
 
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      if (!onMultiChange) { if (files[0]) handleFile(files[0]); return; }
+      setUploading(true);
+      setUploadingCount(files.length);
+      setError(null);
+      try {
+        const results = await Promise.all(files.map(f => uploadToCloudinary(f, folder)));
+        onMultiChange(results.map(r => r.secure_url));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Upload failed — check Cloudinary config.");
+      } finally {
+        setUploading(false);
+        setUploadingCount(0);
+      }
+    },
+    [folder, onMultiChange, handleFile]
+  );
+
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) handleFiles(files);
   }
 
   // ── Preview state ──
@@ -84,14 +105,17 @@ export function MediaUploader({ value, onChange, folder = "tft2-events" }: Props
         ref={inputRef}
         type="file"
         accept="image/*,video/*"
+        multiple={!!onMultiChange}
         className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
+        onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) handleFiles(files); e.target.value = ""; }}
       />
 
       {uploading ? (
         <>
           <Loader2 className="h-6 w-6 animate-spin text-gold" />
-          <p className="text-xs text-muted-foreground">Uploading to Cloudinary…</p>
+          <p className="text-xs text-muted-foreground">
+            {uploadingCount > 1 ? `Uploading ${uploadingCount} files…` : "Uploading to Cloudinary…"}
+          </p>
         </>
       ) : (
         <>
@@ -101,10 +125,10 @@ export function MediaUploader({ value, onChange, folder = "tft2-events" }: Props
             <Video className="h-5 w-5" />
           </div>
           <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            Drop an image or video here, or{" "}
+            Drop image(s) or video here, or{" "}
             <span className="text-gold underline cursor-pointer">browse</span>
           </p>
-          <p className="text-[10px] text-muted-foreground/60">JPG, PNG, GIF, MP4, MOV supported</p>
+          <p className="text-[10px] text-muted-foreground/60">{onMultiChange ? "Select multiple files at once" : "JPG, PNG, GIF, MP4, MOV supported"}</p>
           {error && (
             <div className="flex items-center gap-1.5 text-[10px] text-destructive mt-1">
               <AlertCircle className="h-3 w-3" />

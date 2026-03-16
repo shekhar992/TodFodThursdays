@@ -35,40 +35,55 @@ export function useActivePuzzle() {
   useEffect(() => {
     if (!useLive) return;
 
-    supabase
-      .from('puzzles')
-      .select('*')
-      .eq('is_active', true)
-      .maybeSingle()
-      .then(({ data, error: err }) => {
-        if (err) {
-          setError(err.message);
-        } else {
+    // Shared re-fetch — used for initial load, DELETE events, and the polling fallback.
+    const doFetch = () =>
+      supabase
+        .from('puzzles')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle()
+        .then(({ data, error: err }) => {
+          if (err) { setError(err.message); return; }
           setPuzzle(data ? rowToPuzzle(data as PuzzleRow) : null);
-        }
-        setLoading(false);
-      });
+          setLoading(false);
+        });
 
+    doFetch();
+
+    // Realtime: use payload.new directly — avoids the PROD race condition where
+    // an immediate re-fetch through Supabase's connection pooler (Supavisor) can
+    // return stale data for a moment and leave the admin stuck with an active puzzle.
     const channel = supabase
       .channel('puzzles-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'puzzles' },
-        () => {
-          supabase
-            .from('puzzles')
-            .select('*')
-            .eq('is_active', true)
-            .maybeSingle()
-            .then(({ data }) => {
-              setPuzzle(data ? rowToPuzzle(data as PuzzleRow) : null);
-            });
+        (payload) => {
+          console.log('[Realtime] puzzles event:', payload.eventType);
+          if (payload.eventType === 'DELETE') {
+            doFetch();
+          } else {
+            // INSERT or UPDATE — payload.new is the committed row, no re-fetch needed
+            const row = payload.new as any;
+            if (row.is_active) {
+              setPuzzle(rowToPuzzle(row as PuzzleRow));
+            } else {
+              // Puzzle deactivated — clear immediately, no stale-read risk
+              setPuzzle(null);
+            }
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] puzzles channel:', status);
+      });
+
+    // Polling fallback: catches any Realtime event missed due to WebSocket drops.
+    const poll = setInterval(doFetch, 5000);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(poll);
     };
   }, []);
 

@@ -200,9 +200,10 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         id: e.id, title: e.title, category: e.category, date: e.date,
         description: e.description, isPast: resolvedIsPast,
         image: e.image || e.image_url || undefined,
-        emoji: d?.emoji ?? "📅", format: d?.format ?? "",
-        duration: d?.duration ?? "", rules: d?.rules ?? [],
-        pointsBreakdown: d?.pointsBreakdown ?? [], hidden: false,
+        emoji: e.data?.emoji ?? d?.emoji ?? "📅", format: e.data?.format ?? d?.format ?? "",
+        duration: e.data?.duration ?? d?.duration ?? "",
+        rules: e.data?.rules ?? d?.rules ?? [],
+        pointsBreakdown: e.data?.pointsBreakdown ?? d?.pointsBreakdown ?? [], hidden: false,
         status,
         // Winner: prefer DB columns, fall back to EVENT_DETAILS seed data
         winnerTeamId: e.winner_team_id ?? undefined,
@@ -350,6 +351,13 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         image_url: event.image || null, cloudinary_public_id: null, participants: null,
         results: [], media_urls: [],
         winner_team_id: null, winner_team_name: null, winner_team_logo: null, winner_points: null,
+        data: {
+          emoji: event.emoji,
+          format: event.format,
+          duration: event.duration,
+          rules: event.rules,
+          pointsBreakdown: event.pointsBreakdown,
+        },
       }).then(({ error }) => { if (error) console.error("[Supabase] addEvent:", error.message); });
     }
   }, []);
@@ -386,6 +394,19 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       if ('winnerTeamLogo' in updates) dbUpdate.winner_team_logo = updates.winnerTeamLogo ?? null;
       if ('winnerPoints'   in updates) dbUpdate.winner_points    = updates.winnerPoints   ?? null;
       if ('results'        in updates) dbUpdate.results   = updates.results   ?? [];
+      // Merge rich detail fields into the data jsonb column
+      const dataFields = ['emoji', 'format', 'duration', 'rules', 'pointsBreakdown'] as const;
+      if (dataFields.some(k => k in updates)) {
+        // Read current event to merge unchanged fields
+        const current = (() => { let ev: any; setEvents(prev => { ev = prev.find(e => e.id === id); return prev; }); return ev; })();
+        dbUpdate.data = {
+          emoji:           'emoji'           in updates ? updates.emoji           : current?.emoji,
+          format:          'format'          in updates ? updates.format          : current?.format,
+          duration:        'duration'        in updates ? updates.duration        : current?.duration,
+          rules:           'rules'           in updates ? updates.rules           : current?.rules,
+          pointsBreakdown: 'pointsBreakdown' in updates ? updates.pointsBreakdown : current?.pointsBreakdown,
+        };
+      }
       if ('memories'       in updates) {
         // memories[0] is cover image_url; rest go into media_urls
         const mems = updates.memories ?? [];

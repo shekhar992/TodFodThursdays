@@ -359,6 +359,9 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
             timer_running: false,
             started_at: null,
             expires_at: null,
+            solved_by: null, solved_by_logo: null, solved_by_player: null,
+            solved_by_team_id: null, awarded_points: null,
+            completed_at: null, timed_out: false,
           }).then(({ error }) => { if (error) console.error("[Supabase] launchPuzzle:", error.message); });
         });
     }

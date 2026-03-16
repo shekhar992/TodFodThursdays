@@ -368,6 +368,7 @@ export function EventsView() {
                   category={event.category}
                   date={event.date}
                   emoji={event.emoji}
+                  description={event.description}
                 />
               </motion.div>
             ))}

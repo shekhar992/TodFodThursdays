@@ -13,7 +13,6 @@ interface Team {
   id: string;
   name: string;
   score: number;
-  wins: number;
   color: string;
   logo: string;
   memberCount?: number;
@@ -48,12 +47,12 @@ export function AdminTeams() {
 
   const fetchAll = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setTeams(mockTeams.map(t => ({ ...t, score: t.score, wins: t.wins })));
+      setTeams(mockTeams.map(t => ({ ...t, score: t.score })));
       return;
     }
     setLoading(true);
     const [{ data: teamData }, { data: profileData }] = await Promise.all([
-      supabase.from('teams').select('id,name,score,wins,color,logo').order('score', { ascending: false }),
+      supabase.from('teams').select('id,name,score,color,logo').order('score', { ascending: false }),
       supabase.from('profiles').select('team_id').not('team_id', 'is', null),
     ]);
     const counts: Record<string, number> = {};
@@ -71,7 +70,7 @@ export function AdminTeams() {
     setSaving('new');
     const { data, error } = await supabase
       .from('teams')
-      .insert({ name: newName.trim(), color: newColor, logo: newLogo, score: 0, wins: 0 })
+      .insert({ name: newName.trim(), color: newColor, logo: newLogo, score: 0 })
       .select()
       .single();
     if (error) { toast.error("Failed to create team"); }
@@ -323,7 +322,7 @@ export function AdminTeams() {
                           </p>
                           <p className="text-[10px] text-muted-foreground">pts</p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] h-5">{team.wins}W</Badge>
+
                       </div>
 
                       {/* Actions */}

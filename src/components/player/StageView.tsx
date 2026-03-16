@@ -448,8 +448,16 @@ export function StageView() {
                         ? { duration: 3, repeat: Infinity, ease: "easeInOut" }
                         : {}}
                     >
-                      <span style={{ animation: `medal-shimmer ${3.2 + i * 0.7}s ease-in-out infinite`, display: "inline-block" }}>
+                      <span className="relative inline-block">
                         {medal}
+                        <span
+                          className="pointer-events-none absolute -top-2 -right-1 text-[11px] leading-none text-gold"
+                          style={{ animation: `medal-sparkle ${2.3 + i * 0.6}s ease-in-out infinite` }}
+                        >✦</span>
+                        <span
+                          className="pointer-events-none absolute -bottom-1 -left-1.5 text-[8px] leading-none text-amber-300/80"
+                          style={{ animation: `medal-sparkle ${3.0 + i * 0.6}s ease-in-out infinite 0.9s` }}
+                        >✦</span>
                       </span>
                     </motion.span>
                   ) : (

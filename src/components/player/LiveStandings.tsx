@@ -124,11 +124,12 @@ export function LiveStandings() {
               >
                 <span className={`font-display text-sm font-bold w-8 shrink-0 ${rankColor}`}>
                   {rank <= 3 ? (
-                    <span
-                      className="inline-block"
-                      style={{ animation: `medal-shimmer ${2.8 + rank * 0.4}s ease-in-out infinite` }}
-                    >
+                    <span className="relative inline-block">
                       {["🥇", "🥈", "🥉"][rank - 1]}
+                      <span
+                        className="pointer-events-none absolute -top-1.5 -right-1 text-[9px] leading-none text-gold"
+                        style={{ animation: `medal-sparkle ${2.2 + rank * 0.55}s ease-in-out infinite` }}
+                      >✦</span>
                     </span>
                   ) : String(rank).padStart(2, "0")}
                 </span>

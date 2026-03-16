@@ -100,9 +100,9 @@
   to   { transform: translateX(-50%); }
 }
 
-@keyframes medal-shimmer {
-  0%, 100% { filter: drop-shadow(0 0 3px hsl(43 93% 60% / 0.35)) brightness(1); }
-  50%       { filter: drop-shadow(0 0 10px hsl(43 93% 60% / 0.85)) brightness(1.18); }
+@keyframes medal-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  40%, 60%  { opacity: 1; transform: scale(1.15) rotate(15deg); }
 }
 
 @keyframes callout-pulse {

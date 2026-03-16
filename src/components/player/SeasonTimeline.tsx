@@ -62,12 +62,26 @@ export function SeasonTimeline({ onViewEvents }: Props) {
       </div>
 
       {/* ── Timeline ── */}
-      <div className="overflow-x-auto pb-4 -mx-4 px-4"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+      <div className="relative">
+        {/* Scroll-right hint: gradient fade + bouncing chevron */}
         <div
-          className="relative flex"
-          style={{ minWidth: `${totalCount * NODE_W}px` }}
+          className="pointer-events-none absolute right-0 top-0 bottom-4 z-10 flex items-center justify-end pr-1"
+          style={{ width: 64, background: "linear-gradient(to right, transparent, hsl(248 32% 5%) 72%)" }}
         >
+          <motion.div
+            animate={{ x: [0, 5, 0] }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <ChevronRight className="h-5 w-5 text-gold/75" />
+          </motion.div>
+        </div>
+
+        <div className="overflow-x-auto pb-4 -mx-4 px-4"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          <div
+            className="relative flex"
+            style={{ minWidth: `${totalCount * NODE_W}px`, paddingRight: 56 }}
+          >
           {/* Full track line */}
           <div
             className="absolute h-px bg-border/40"
@@ -217,6 +231,7 @@ export function SeasonTimeline({ onViewEvents }: Props) {
               </motion.div>
             );
           })}
+          </div>
         </div>
       </div>
     </section>

@@ -178,7 +178,7 @@ function ComingSoonCard({ title, category, date, emoji }: EventCardProps) {
 function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeamLogo, winnerPoints, results = [], memories = [] }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const accentColor = (categoryColors as Record<string, string>)[category] ?? "hsl(38 92% 50%)";
-  const hasDetails = results.length > 0 || memories.length > 0;
+  const hasDetails = results.length > 0 || memories.length > 0 || true; // always expandable to show memories state
 
   return (
     <div
@@ -210,6 +210,14 @@ function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeam
           </div>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
+          {memories.length > 0 && (
+            <span
+              className="hidden sm:flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+              style={{ background: `${accentColor}10`, color: accentColor, border: `1px solid ${accentColor}25` }}
+            >
+              <Images className="h-2.5 w-2.5" /> Memories
+            </span>
+          )}
           <span
             className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest"
             style={{ borderColor: `${accentColor}30`, color: accentColor }}
@@ -267,7 +275,7 @@ function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeam
               )}
 
               {/* Memories */}
-              {memories.length > 0 && (
+              {memories.length > 0 ? (
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
                     <Images className="h-3 w-3" /> Memories
@@ -284,6 +292,11 @@ function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeam
                       </div>
                     ))}
                   </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-border/30 bg-muted/20 px-3 py-2.5">
+                  <Images className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                  <p className="text-xs text-muted-foreground/50 italic">Memories uploading soon…</p>
                 </div>
               )}
 

@@ -29,11 +29,11 @@ function msUntilEventStart(dateStr: string): number {
   return Math.max(0, start - Date.now());
 }
 
-// Format seconds as HH:MM — for day-of countdown (not MM:SS)
+// Format seconds as HHH:MMM — for day-of countdown (not MM:SS)
 function formatHHMM(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return `${String(h).padStart(2, '0')}H:${String(m).padStart(2, '0')}M`;
 }
 
 // True if event date (local time) is today or in the future — guards against

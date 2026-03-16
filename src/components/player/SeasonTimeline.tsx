@@ -59,6 +59,14 @@ export function SeasonTimeline({ onViewEvents }: Props) {
       </div>
 
       {/* ── Timeline ── */}
+      <div className="relative">
+      {/* Right scroll-hint: fade + chevron arrow */}
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 flex items-center justify-end pr-1"
+        style={{ width: 72, background: "linear-gradient(to right, transparent, hsl(248 32% 5% / 0.92) 60%)" }}>
+        <div className="flex flex-col items-center gap-0.5 opacity-70">
+          <ChevronRight className="h-5 w-5 text-gold/70" />
+        </div>
+      </div>
       <div className="overflow-x-auto pb-4 -mx-4 px-4"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         <div
@@ -215,6 +223,7 @@ export function SeasonTimeline({ onViewEvents }: Props) {
             );
           })}
         </div>
+      </div>
       </div>
     </section>
   );

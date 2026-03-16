@@ -136,8 +136,12 @@ export function LiveStandings() {
                 <span className={`font-display text-lg font-bold tabular-nums w-24 text-right shrink-0 ${scoreColor}`}>
                   <AnimatedScore value={team.score} />
                 </span>
-                <span className="text-muted-foreground/40 shrink-0">
-                  {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                <span className={`shrink-0 rounded-full border px-1.5 py-0.5 transition-colors ${
+                  isExpanded
+                    ? "border-gold/50 bg-gold/10 text-gold"
+                    : "border-border/60 bg-secondary/60 text-muted-foreground hover:border-gold/40 hover:text-foreground"
+                }`}>
+                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 </span>
               </button>
 

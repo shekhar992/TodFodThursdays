@@ -319,7 +319,7 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
                 <Images className="h-3.5 w-3.5" />
               </button>
             )}
-            {/* Trophy — view/edit results */}}
+            {/* Trophy — view/edit results */}
             <button
               onClick={handleOpenResults}
               title="View / edit results"

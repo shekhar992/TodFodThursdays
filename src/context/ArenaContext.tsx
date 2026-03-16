@@ -239,21 +239,32 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     // Initial fetch
     fetchCompletedPuzzles();
 
-    // Realtime: pick up new rows written by any client (e.g. player solves on their browser)
+    // Realtime: pick up new/updated rows written by any client
+    // Listen for * (not just INSERT) because persistCompleted uses upsert which
+    // can produce UPDATE events when the row already exists.
     const channel = supabase
       .channel('completed-puzzles-changes')
       .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'completed_puzzles' },
+        { event: '*', schema: 'public', table: 'completed_puzzles' },
         (payload) => {
+          console.log('[Realtime] completed_puzzles event:', payload.eventType, (payload.new as any)?.id);
+          if (payload.eventType === 'DELETE') return;
           const entry = rowToCompleted(payload.new);
           setCompletedPuzzles(prev => {
-            // Deduplicate — local writer already prepended it
-            if (prev.some(p => p.id === entry.id)) return prev;
+            const idx = prev.findIndex(p => p.id === entry.id);
+            if (idx >= 0) {
+              // Already exists (local writer or upsert→UPDATE) — replace with DB truth
+              const next = [...prev];
+              next[idx] = entry;
+              return next;
+            }
             return [entry, ...prev];
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] completed_puzzles channel:', status);
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -453,8 +464,15 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured) {
         const team = updated.find(t => t.id === teamId);
         if (team) {
+          console.log('[Arena] updateScore →', team.name, 'delta:', delta, 'newScore:', team.score);
           supabase.from("teams").update({ score: team.score }).eq("id", teamId)
-            .then(({ error }) => { if (error) console.error("[Supabase] updateScore:", error.message); });
+            .then(({ error }) => {
+              if (error) {
+                console.error("[Supabase] updateScore FAILED:", error.message, error);
+              } else {
+                console.log("[Supabase] updateScore OK →", team.name, team.score);
+              }
+            });
         }
       }
       return updated;

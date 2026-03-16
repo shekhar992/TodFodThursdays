@@ -200,27 +200,27 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     }
   }, [rawPuzzle]);
 
-  // ── Load completed puzzle history + subscribe to new entries ──────────
-  useEffect(() => {
-    if (!isSupabaseConfigured || isMockMode) return;
+  // Stable ref for tracking activePuzzle transitions
+  const prevActivePuzzleIdRef = useRef<string | undefined>(undefined);
 
-    function rowToCompleted(r: any): CompletedPuzzle {
-      return {
-        id: r.id,
-        question: r.question,
-        answer: r.answer,
-        points: r.points,
-        awardedPoints: r.awarded_points ?? undefined,
-        solvedBy: r.solved_by ?? undefined,
-        solvedByLogo: r.solved_by_logo ?? undefined,
-        solvedByPlayer: r.solved_by_player ?? undefined,
-        solvedByTeamId: r.solved_by_team_id ?? undefined,
-        completedAt: new Date(r.completed_at).getTime(),
-        timedOut: r.timed_out,
-      };
-    }
+  // ── DB row → local type (used in multiple places) ─────────────────────
+  function rowToCompleted(r: any): CompletedPuzzle {
+    return {
+      id: r.id,
+      question: r.question,
+      answer: r.answer,
+      points: r.points,
+      awardedPoints: r.awarded_points ?? undefined,
+      solvedBy: r.solved_by ?? undefined,
+      solvedByLogo: r.solved_by_logo ?? undefined,
+      solvedByPlayer: r.solved_by_player ?? undefined,
+      solvedByTeamId: r.solved_by_team_id ?? undefined,
+      completedAt: new Date(r.completed_at).getTime(),
+      timedOut: r.timed_out,
+    };
+  }
 
-    // Initial fetch
+  function fetchCompletedPuzzles() {
     supabase
       .from('completed_puzzles')
       .select('*')
@@ -228,8 +228,16 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       .limit(50)
       .then(({ data, error }) => {
         if (error) { console.error('[Supabase] completed_puzzles fetch:', error.message); return; }
-        if (data && data.length > 0) setCompletedPuzzles(data.map(rowToCompleted));
+        if (data) setCompletedPuzzles(data.map(rowToCompleted));
       });
+  }
+
+  // ── Load completed puzzle history + subscribe to new entries ──────────
+  useEffect(() => {
+    if (!isSupabaseConfigured || isMockMode) return;
+
+    // Initial fetch
+    fetchCompletedPuzzles();
 
     // Realtime: pick up new rows written by any client (e.g. player solves on their browser)
     const channel = supabase
@@ -249,6 +257,21 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // ── Re-fetch completed puzzles when any puzzle ends ────────────────────
+  // Fires on ALL browsers (player + admin) when activePuzzle goes null.
+  // Safety net: even if the Realtime INSERT event was missed, this catches it.
+  useEffect(() => {
+    if (!isSupabaseConfigured || isMockMode) return;
+    const prevId = prevActivePuzzleIdRef.current;
+    prevActivePuzzleIdRef.current = activePuzzle?.id;
+    // Had a puzzle, now null → a puzzle just ended → re-fetch after short delay
+    // to ensure the INSERT has committed before we read
+    if (prevId && activePuzzle === null) {
+      const t = setTimeout(fetchCompletedPuzzles, 800);
+      return () => clearTimeout(t);
+    }
+  }, [activePuzzle]);
 
   // ── Auto-expire puzzle when timer reaches 0 ────────────────────────────
   useEffect(() => {
@@ -282,7 +305,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   // ── Persist completed puzzle to Supabase ─────────────────────────────
   function persistCompleted(cp: CompletedPuzzle) {
     if (!isSupabaseConfigured) return;
-    supabase.from('completed_puzzles').insert({
+    supabase.from('completed_puzzles').upsert({
       id: cp.id,
       question: cp.question,
       answer: cp.answer,
@@ -294,7 +317,8 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       solved_by_team_id: cp.solvedByTeamId ?? null,
       completed_at: new Date(cp.completedAt).toISOString(),
       timed_out: cp.timedOut,
-    }).then(({ error }) => { if (error) console.error('[Supabase] completed_puzzles insert:', error.message); });
+    }, { onConflict: 'id' })
+      .then(({ error }) => { if (error) console.error('[Supabase] completed_puzzles upsert:', error.message); });
   }
 
   // ── Actions ───────────────────────────────────────────────────────────

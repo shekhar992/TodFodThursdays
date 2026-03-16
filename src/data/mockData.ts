@@ -121,12 +121,12 @@ export const categoryColors: Record<string, string> = {
 };
 
 export const mockTeams: Team[] = [
-  { id: '1', name: 'Team Titans',    score: 520, wins: 7, color: '#00E5FF', logo: '⚡' },
-  { id: '2', name: 'Team Phoenix',   score: 480, wins: 6, color: '#FF2E88', logo: '🔥' },
-  { id: '3', name: 'Team Mavericks', score: 460, wins: 5, color: '#7A5CFF', logo: '🦅' },
-  { id: '4', name: 'Team Warriors',  score: 430, wins: 4, color: '#00FFC6', logo: '⚔️' },
-  { id: '5', name: 'Team Vortex',    score: 390, wins: 3, color: '#FFE600', logo: '🌀' },
-  { id: '6', name: 'Team Nexus',     score: 350, wins: 2, color: '#FF6B35', logo: '🔗' },
+  { id: '1', name: 'Team Titans',    score: 520, color: '#00E5FF', logo: '⚡' },
+  { id: '2', name: 'Team Phoenix',   score: 480, color: '#FF2E88', logo: '🔥' },
+  { id: '3', name: 'Team Mavericks', score: 460, color: '#7A5CFF', logo: '🦅' },
+  { id: '4', name: 'Team Warriors',  score: 430, color: '#00FFC6', logo: '⚔️' },
+  { id: '5', name: 'Team Vortex',    score: 390, color: '#FFE600', logo: '🌀' },
+  { id: '6', name: 'Team Nexus',     score: 350, color: '#FF6B35', logo: '🔗' },
 ];
 
 export const mockAnnouncements: Announcement[] = [

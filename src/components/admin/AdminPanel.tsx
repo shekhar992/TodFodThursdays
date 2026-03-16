@@ -28,7 +28,7 @@ function QuickAnnounce() {
         {QUICK_PRESETS.map(p => (
           <button
             key={p}
-            onClick={() => post(p)}
+            onClick={() => setText(p)}
             className="rounded-full border border-border/60 bg-background/50 px-2.5 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:border-gold/40 hover:bg-gold/5 transition-colors whitespace-nowrap"
           >
             {p}

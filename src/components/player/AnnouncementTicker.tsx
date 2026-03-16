@@ -19,7 +19,7 @@ export function AnnouncementTicker() {
 
       <div
         className="flex gap-0 py-2 w-max"
-        style={{ animation: "ticker-scroll 30s linear infinite" }}
+        style={{ animation: "ticker-scroll 55s linear infinite" }}
       >
         {doubled.map((text, i) => (
           <span key={i} className="flex items-center shrink-0">

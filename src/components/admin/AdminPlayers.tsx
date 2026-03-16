@@ -33,6 +33,7 @@ export function AdminPlayers() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [filterTeam, setFilterTeam] = useState<string>("all");
 
   const fetchAll = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -128,6 +129,46 @@ export function AdminPlayers() {
         </Button>
       </div>
 
+      {/* Team filter pills */}
+      {teams.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0 mr-1">Filter:</span>
+          <button
+            onClick={() => setFilterTeam("all")}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              filterTeam === "all"
+                ? "border-gold/60 bg-gold/10 text-gold font-semibold"
+                : "border-border/60 text-muted-foreground hover:border-gold/40 hover:text-foreground"
+            }`}
+          >
+            All ({players.length})
+          </button>
+          {teams.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setFilterTeam(t.id)}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors flex items-center gap-1 ${
+                filterTeam === t.id
+                  ? "border-gold/60 bg-gold/10 text-gold font-semibold"
+                  : "border-border/60 text-muted-foreground hover:border-gold/40 hover:text-foreground"
+              }`}
+            >
+              {t.logo} {t.name} ({grouped[t.id]?.length ?? 0})
+            </button>
+          ))}
+          <button
+            onClick={() => setFilterTeam("unassigned")}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              filterTeam === "unassigned"
+                ? "border-gold/60 bg-gold/10 text-gold font-semibold"
+                : "border-border/60 text-muted-foreground hover:border-gold/40 hover:text-foreground"
+            }`}
+          >
+            👤 Unassigned ({grouped['unassigned'].length})
+          </button>
+        </div>
+      )}
+
       {loading && players.length === 0 ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading players…
@@ -139,37 +180,48 @@ export function AdminPlayers() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Unassigned */}
-          {grouped['unassigned'].length > 0 && (
-            <TeamSection
-              label="Unassigned"
-              color="#94a3b8"
-              logo="👤"
-              players={grouped['unassigned']}
-              teams={teams}
-              teamMap={teamMap}
-              saving={saving}
-              onAssignTeam={assignTeam}
-              onToggleCaptain={toggleCaptain}
-            />
-          )}
-          {/* Per team */}
-          {teams.map(team => (
-            grouped[team.id]?.length > 0 && (
+          {filterTeam === "all" ? (
+            <>
+              {grouped['unassigned'].length > 0 && (
+                <TeamSection
+                  label="Unassigned" color="#94a3b8" logo="👤"
+                  players={grouped['unassigned']} teams={teams} teamMap={teamMap}
+                  saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                />
+              )}
+              {teams.map(team =>
+                grouped[team.id]?.length > 0 && (
+                  <TeamSection
+                    key={team.id} label={team.name} color={team.color} logo={team.logo}
+                    players={grouped[team.id]} teams={teams} teamMap={teamMap}
+                    saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                  />
+                )
+              )}
+            </>
+          ) : filterTeam === "unassigned" ? (
+            grouped['unassigned'].length > 0 ? (
               <TeamSection
-                key={team.id}
-                label={team.name}
-                color={team.color}
-                logo={team.logo}
-                players={grouped[team.id]}
-                teams={teams}
-                teamMap={teamMap}
-                saving={saving}
-                onAssignTeam={assignTeam}
-                onToggleCaptain={toggleCaptain}
+                label="Unassigned" color="#94a3b8" logo="👤"
+                players={grouped['unassigned']} teams={teams} teamMap={teamMap}
+                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
               />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No unassigned players.</p>
             )
-          ))}
+          ) : (() => {
+            const team = teams.find(t => t.id === filterTeam)!;
+            const members = grouped[filterTeam] ?? [];
+            return members.length > 0 ? (
+              <TeamSection
+                label={team.name} color={team.color} logo={team.logo}
+                players={members} teams={teams} teamMap={teamMap}
+                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No members in {team.name} yet.</p>
+            );
+          })()}
         </div>
       )}
     </div>

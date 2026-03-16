@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useArena } from "@/context/ArenaContext";
 import { usePuzzleTimer, formatCountdown } from "@/hooks/usePuzzleTimer";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -354,6 +354,20 @@ export function AdminPuzzles() {
   const [aeH, setAeH] = useState("");
   const [aeTl, setAeTl] = useState(300);
   const [aeSf, setAeSf] = useState(""); // scheduledFor as datetime-local string
+  const [launchedLibraryId, setLaunchedLibraryId] = useState<string | null>(null);
+  const prevPuzzleIdRef = useRef<string | undefined>(undefined);
+
+  // When activePuzzle transitions from some id → null, the launched puzzle ended.
+  // Remove it from the library so it moves to Past Puzzles instead of staying in the library.
+  useEffect(() => {
+    const prev = prevPuzzleIdRef.current;
+    prevPuzzleIdRef.current = activePuzzle?.id;
+    if (prev && activePuzzle === null && launchedLibraryId) {
+      setLibrary(lib => lib.filter(p => p.id !== launchedLibraryId));
+      persistDelete(launchedLibraryId);
+      setLaunchedLibraryId(null);
+    }
+  }, [activePuzzle]);
 
   const secondsLeft = usePuzzleTimer(activePuzzle?.expiresAt, activePuzzle?.timerRunning ?? false);
   const isRunning = activePuzzle?.timerRunning ?? false;
@@ -366,6 +380,7 @@ export function AdminPuzzles() {
       : "text-muted-foreground";
 
   function launchFromLibrary(pz: LibraryPuzzle) {
+    setLaunchedLibraryId(pz.id);
     launchPuzzle({ question: pz.question, answer: pz.answer, points: pz.points, hint: pz.hint, timeLimit: pz.timeLimit, scheduledFor: pz.scheduledFor });
   }
 

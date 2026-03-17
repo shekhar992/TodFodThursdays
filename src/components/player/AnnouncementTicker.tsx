@@ -3,12 +3,10 @@ import { useArena } from "@/context/ArenaContext";
 export function AnnouncementTicker() {
   const { announcements } = useArena();
 
-  const items = announcements.length > 0
-    ? announcements.map(a => a.text)
-    : ["TFT Arena Season 2 is LIVE", "Leaderboard updates every 15 min", "Next event: Thursday 7PM IST", "Top teams battle for the championship"];
+  if (announcements.length === 0) return null;
 
   // Double the list so the seamless loop works
-  const doubled = [...items, ...items];
+  const doubled = [...announcements.map(a => a.text), ...announcements.map(a => a.text)];
 
   return (
     <div className="relative overflow-hidden border-b border-gold/30 bg-gradient-to-r from-[hsl(248_32%_5%)] via-[hsl(270_40%_8%)] to-[hsl(248_32%_5%)]">

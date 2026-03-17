@@ -439,6 +439,10 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
   const deleteAnnouncement = useCallback((id: string) => {
     setAnnouncements(prev => prev.filter(a => a.id !== id));
+    if (isSupabaseConfigured) {
+      supabase.from("announcements").delete().eq("id", id)
+        .then(({ error }) => { if (error) console.error("[Supabase] deleteAnnouncement:", error.message); });
+    }
   }, []);
 
   const launchPuzzle = useCallback((puzzle: Omit<Puzzle, "id" | "timerRunning" | "startedAt" | "expiresAt">) => {

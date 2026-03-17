@@ -314,7 +314,7 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
             {isLive && (
               <button
                 onClick={handleEnd}
-                title="End event & enter results"
+                title="End event and enter results"
                 className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors"
               >
                 <Square className="h-3 w-3 fill-current" /> End

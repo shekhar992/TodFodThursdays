@@ -460,7 +460,7 @@ export function DynamicCallout({ onOpenPuzzle }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      {/* Countdown to start time (only when event has a specific time set) */}
+                      {/* Countdown to start time — only shown when event has a specific time set */}
                       {todayEventWithTime && startSecsLeft > 0 && (
                         <div className="flex flex-col items-center rounded-xl px-4 py-2.5"
                           style={{ background: "hsl(43 93% 60% / 0.08)", border: "1px solid hsl(43 93% 60% / 0.2)" }}>

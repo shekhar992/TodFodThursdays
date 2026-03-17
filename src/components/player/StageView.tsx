@@ -1,6 +1,6 @@
+import { AnnouncementTicker } from "./AnnouncementTicker";
 import { useArena } from "@/context/ArenaContext";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { AnnouncementTicker } from "./AnnouncementTicker";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, X } from "lucide-react";
 
@@ -260,6 +260,11 @@ export function StageView() {
 
   return (
     <div className="min-h-screen bg-[hsl(248_32%_4%)] flex flex-col overflow-hidden relative">
+
+      {/* Announcement ticker — pinned at top, above all layers */}
+      <div className="relative z-30">
+        <AnnouncementTicker />
+      </div>
 
       {/* Scanline texture */}
       <div

@@ -4,7 +4,7 @@ import { PlayerHeader, PlayerView } from "@/components/player/PlayerHeader";
 import { AnnouncementTicker } from "@/components/player/AnnouncementTicker";
 import { HeroBanner } from "@/components/player/HeroBanner";
 import { PlayerProfilePanel } from "@/components/player/PlayerProfilePanel";
-import { DynamicCallout } from "@/components/player/DynamicCallout";
+import { ChallengeBanner } from "@/components/player/ChallengeBanner";
 import { LiveStandings } from "@/components/player/LiveStandings";
 import { SeasonTimeline } from "@/components/player/SeasonTimeline";
 import { PuzzleModal } from "@/components/player/PuzzleModal";
@@ -30,7 +30,7 @@ export function PlayerDashboard() {
       {activeView === 'dashboard' && (
         <>
           <HeroBanner />
-          <DynamicCallout onOpenPuzzle={() => setPuzzleOpen(true)} />
+          <ChallengeBanner onOpen={() => setPuzzleOpen(true)} />
           <LiveStandings />
           <SeasonTimeline onViewEvents={() => setActiveView('events')} />
         </>

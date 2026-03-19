@@ -95,6 +95,7 @@ interface ArenaActions {
   solvePuzzle: (solver?: { playerName: string; teamName: string; teamLogo: string; teamId: string }) => void;
   updateScore: (teamId: string, delta: number) => void;
   setStageModeActive: (active: boolean) => void;
+  cancelPuzzle: () => void;
 }
 
 const ArenaContext = createContext<(ArenaState & ArenaActions) | null>(null);
@@ -518,6 +519,18 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     setPuzzleSolved(false);
   }, []);
 
+  const cancelPuzzle = useCallback(() => {
+    if (expireTimerRef.current) clearTimeout(expireTimerRef.current);
+    const prev = activePuzzleRef.current;
+    if (prev && isSupabaseConfigured) {
+      supabase.from("puzzles").update({ is_active: false, timer_running: false })
+        .eq("id", prev.id)
+        .then(({ error }) => { if (error) console.error("[Supabase] cancelPuzzle:", error.message); });
+    }
+    setActivePuzzle(null);
+    setPuzzleSolved(false);
+  }, []);
+
   const updateScore = useCallback((teamId: string, delta: number) => {
     setTeams(prev => {
       const updated = prev.map(t => t.id === teamId ? { ...t, score: t.score + delta } : t);
@@ -590,7 +603,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     <ArenaContext.Provider value={{
       teams, events, announcements, activePuzzle, completedPuzzles, puzzleSolved, solvedTeams, stageMode,
       addEvent, updateEvent, deleteEvent, addAnnouncement, deleteAnnouncement,
-      launchPuzzle, startPuzzleTimer, stopPuzzleTimer, solvePuzzle, updateScore, setStageModeActive,
+      launchPuzzle, startPuzzleTimer, stopPuzzleTimer, cancelPuzzle, solvePuzzle, updateScore, setStageModeActive,
     }}>
       {children}
     </ArenaContext.Provider>

@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Crown, Loader2, RefreshCw, ShieldAlert, Users } from "lucide-react";
+import { Crown, Loader2, RefreshCw, ShieldAlert, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 interface Player {
@@ -61,6 +61,18 @@ export function AdminPlayers() {
     else {
       setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, team_id: teamId, is_captain: false } : p));
       toast.success("Team assigned");
+    }
+    setSaving(null);
+  };
+
+  const deletePlayer = async (playerId: string, isCaptain: boolean) => {
+    if (isCaptain) { toast.error("Remove captain status first before deleting"); return; }
+    setSaving(playerId);
+    const { error } = await supabase.from('profiles').delete().eq('id', playerId);
+    if (error) { toast.error("Failed to remove player"); }
+    else {
+      setPlayers(prev => prev.filter(p => p.id !== playerId));
+      toast.success("Player removed");
     }
     setSaving(null);
   };
@@ -186,7 +198,7 @@ export function AdminPlayers() {
                 <TeamSection
                   label="Unassigned" color="#94a3b8" logo="👤"
                   players={grouped['unassigned']} teams={teams} teamMap={teamMap}
-                  saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                  saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain} onDeletePlayer={deletePlayer}
                 />
               )}
               {teams.map(team =>
@@ -194,7 +206,7 @@ export function AdminPlayers() {
                   <TeamSection
                     key={team.id} label={team.name} color={team.color} logo={team.logo}
                     players={grouped[team.id]} teams={teams} teamMap={teamMap}
-                    saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                    saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain} onDeletePlayer={deletePlayer}
                   />
                 )
               )}
@@ -204,7 +216,7 @@ export function AdminPlayers() {
               <TeamSection
                 label="Unassigned" color="#94a3b8" logo="👤"
                 players={grouped['unassigned']} teams={teams} teamMap={teamMap}
-                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain} onDeletePlayer={deletePlayer}
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">No unassigned players.</p>
@@ -216,7 +228,7 @@ export function AdminPlayers() {
               <TeamSection
                 label={team.name} color={team.color} logo={team.logo}
                 players={members} teams={teams} teamMap={teamMap}
-                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain}
+                saving={saving} onAssignTeam={assignTeam} onToggleCaptain={toggleCaptain} onDeletePlayer={deletePlayer}
               />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">No members in {team.name} yet.</p>
@@ -229,7 +241,7 @@ export function AdminPlayers() {
 }
 
 function TeamSection({
-  label, color, logo, players, teams, teamMap, saving, onAssignTeam, onToggleCaptain,
+  label, color, logo, players, teams, teamMap, saving, onAssignTeam, onToggleCaptain, onDeletePlayer,
 }: {
   label: string;
   color: string;
@@ -240,7 +252,9 @@ function TeamSection({
   saving: string | null;
   onAssignTeam: (playerId: string, teamId: string | null) => void;
   onToggleCaptain: (playerId: string, teamId: string | null, isCaptain: boolean) => void;
+  onDeletePlayer: (playerId: string, isCaptain: boolean) => void;
 }) {
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -306,6 +320,30 @@ function TeamSection({
             >
               {saving === player.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Crown className="h-3 w-3" />}
               {player.is_captain ? "Captain" : "Set"}
+            </Button>
+
+            {/* Delete */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 w-7 p-0 transition-colors ${
+                confirmDeleteId === player.id
+                  ? "text-destructive hover:bg-destructive/10"
+                  : "text-muted-foreground hover:text-destructive"
+              }`}
+              title={confirmDeleteId === player.id ? "Click again to confirm" : "Remove player"}
+              disabled={saving === player.id}
+              onClick={() => {
+                if (confirmDeleteId === player.id) {
+                  setConfirmDeleteId(null);
+                  onDeletePlayer(player.id, player.is_captain);
+                } else {
+                  setConfirmDeleteId(player.id);
+                  setTimeout(() => setConfirmDeleteId(null), 3000);
+                }
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         ))}

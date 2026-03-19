@@ -106,23 +106,44 @@ export function AdminPanel() {
             ))}
           </nav>
 
-          {/* Stage Mode toggle */}
-          <div className="mt-6 pt-4 border-t border-border/40">
+          {/* Stage Board launcher */}
+          <div className="mt-6 pt-4 border-t border-border/40 space-y-1">
+            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Stage Board
+            </p>
+
+            {/* Registration Board */}
             <button
-              onClick={() => setStageModeActive(!stageMode)}
-              className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+              onClick={() => window.open("/stage?mode=registration", "_blank", "noopener,noreferrer")}
+              className="flex w-full items-center gap-2.5 rounded-md border border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+            >
+              <Users className="h-4 w-4 shrink-0" />
+              <span>Registration Board</span>
+            </button>
+
+            {/* Season Board */}
+            <button
+              onClick={() => {
+                setStageModeActive(true);
+                window.open("/stage?mode=season", "_blank", "noopener,noreferrer");
+              }}
+              className={`flex w-full items-center gap-2.5 rounded-md border px-3 py-2 text-sm font-medium transition-all ${
                 stageMode
-                  ? "bg-red-500/15 text-red-400 border border-red-500/25 shadow-[0_0_12px_hsl(0_80%_60%/0.15)]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30 border border-transparent"
+                  ? "border-red-500/25 bg-red-500/15 text-red-400 shadow-[0_0_12px_hsl(0_80%_60%/0.15)]"
+                  : "border-transparent text-muted-foreground hover:bg-accent/30 hover:text-foreground"
               }`}
             >
               <Tv className="h-4 w-4 shrink-0" />
-              <span>{stageMode ? "● Stage ON" : "Stage Mode"}</span>
+              <span>{stageMode ? "● Season ON" : "Season Board"}</span>
             </button>
+
             {stageMode && (
-              <p className="mt-1.5 px-3 text-[10px] text-red-400/60 leading-tight">
-                Player screens show big display view
-              </p>
+              <button
+                onClick={() => setStageModeActive(false)}
+                className="flex w-full items-center rounded-md px-3 py-1 text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+              >
+                <span className="ml-6">Turn off stage</span>
+              </button>
             )}
           </div>
         </aside>

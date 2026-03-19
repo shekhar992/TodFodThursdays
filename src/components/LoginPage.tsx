@@ -89,6 +89,15 @@ export function LoginPage({ onCancel, onSwitchToSignUp }: LoginPageProps) {
           </p>
         </div>
 
+        {!isAdmin && (
+          <div className="flex items-start gap-2.5 rounded-lg border-l-4 border-amber-400 bg-amber-950/40 px-3 py-2.5">
+            <span className="shrink-0 text-amber-400 mt-0.5">⚠</span>
+            <p className="text-xs text-amber-300 leading-relaxed">
+              Use your <strong>personal email</strong>, not your Deloitte work email.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>

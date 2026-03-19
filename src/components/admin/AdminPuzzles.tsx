@@ -69,6 +69,58 @@ function timeLabelFor(secs: number) {
   return secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
 }
 
+// ── ScheduleCountdown ─────────────────────────────────────────────────────
+function ScheduleCountdown({ scheduledFor }: { scheduledFor: number }) {
+  const [secsLeft, setSecsLeft] = useState(() =>
+    Math.max(0, Math.ceil((scheduledFor - Date.now()) / 1000))
+  );
+  useEffect(() => {
+    const id = setInterval(
+      () => setSecsLeft(Math.max(0, Math.ceil((scheduledFor - Date.now()) / 1000))),
+      1000
+    );
+    return () => clearInterval(id);
+  }, [scheduledFor]);
+  if (secsLeft === 0) return <span className="text-xs font-bold text-amber-400 animate-pulse">Launching…</span>;
+  const m = Math.floor(secsLeft / 60);
+  const s = secsLeft % 60;
+  return (
+    <span className="font-carnival text-2xl tabular-nums tracking-wider text-amber-400">
+      {m}:{String(s).padStart(2, '0')}
+    </span>
+  );
+}
+
+// ── ScheduledCard ─────────────────────────────────────────────────────────
+function ScheduledCard({ pz, onCancelSchedule }: {
+  pz: LibraryPuzzle;
+  onCancelSchedule: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm text-foreground leading-relaxed line-clamp-2 italic">"{pz.question}"</p>
+        <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400/60 mt-0.5" />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full border border-gold/25 bg-gold/10 px-2.5 py-0.5 text-[11px] font-bold text-gold">+{pz.points} pts</span>
+        <span className="rounded-full border border-border/50 bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">{timeLabelFor(pz.timeLimit)}</span>
+      </div>
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/70">Auto-starts in</span>
+        <ScheduleCountdown scheduledFor={pz.scheduledFor!} />
+      </div>
+      <div className="border-t border-border/30" />
+      <button
+        onClick={onCancelSchedule}
+        className="flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 px-3 py-2 text-xs font-bold text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" /> Cancel Schedule
+      </button>
+    </div>
+  );
+}
+
 // ── LibraryCard ────────────────────────────────────────────────────────────
 function LibraryCard({ pz, onLaunch, onSave, onDelete, isLocked, isEditing, onEditToggle }: {
   pz: LibraryPuzzle; onLaunch: () => void; onSave: (updated: LibraryPuzzle) => void;
@@ -87,7 +139,13 @@ function LibraryCard({ pz, onLaunch, onSave, onDelete, isLocked, isEditing, onEd
     if (isEditing) {
       setQ(pz.question); setA(pz.answer);
       setPts(String(pz.points)); setH(pz.hint ?? ""); setTl(pz.timeLimit);
-      setSf(pz.scheduledFor ? new Date(pz.scheduledFor).toISOString().slice(0, 16) : "");
+      if (pz.scheduledFor) {
+        const d = new Date(pz.scheduledFor);
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        setSf(local);
+      } else {
+        setSf("");
+      }
     }
   }, [isEditing]);
 
@@ -279,7 +337,7 @@ function NewPuzzleCard({ onSave, onCancel }: { onSave: (pz: LibraryPuzzle) => vo
 export function AdminPuzzles() {
   const {
     activePuzzle, puzzleSolved, completedPuzzles,
-    launchPuzzle, startPuzzleTimer, stopPuzzleTimer,
+    launchPuzzle, startPuzzleTimer, stopPuzzleTimer, cancelPuzzle,
   } = useArena();
 
   const [library, setLibrary] = useState<LibraryPuzzle[]>(SEED_LIBRARY);
@@ -357,6 +415,15 @@ export function AdminPuzzles() {
   const [launchedLibraryId, setLaunchedLibraryId] = useState<string | null>(null);
   const prevPuzzleIdRef = useRef<string | undefined>(undefined);
 
+  // ── Section filter clock ────────────────────────────────────────────────
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 10_000);
+    return () => clearInterval(id);
+  }, []);
+  const libraryRef = useRef(library);
+  useEffect(() => { libraryRef.current = library; }, [library]);
+
   // When activePuzzle transitions from some id → null, the launched puzzle ended.
   // Remove it from the library so it moves to Past Puzzles instead of staying in the library.
   useEffect(() => {
@@ -400,6 +467,41 @@ export function AdminPuzzles() {
     launchPuzzle({ question: aeQ.trim(), answer: aeA.trim(), points: parseInt(aePts) || 50, hint: aeH.trim() || undefined, timeLimit: aeTl, scheduledFor: aeSf ? new Date(aeSf).getTime() : undefined });
     setEditingActive(false);
   }
+
+  // ── Section filter: puzzles entering 5-min window ────────────────────
+  const WINDOW_MS = 5 * 60 * 1000;
+  const scheduledUpcoming = library.filter(
+    p => p.scheduledFor !== undefined && p.scheduledFor <= now + WINDOW_MS && p.scheduledFor > now
+  );
+  const libraryVisible = library.filter(
+    p => !p.scheduledFor || p.scheduledFor > now + WINDOW_MS
+  );
+
+  function handleCancelSchedule(id: string) {
+    const pz = library.find(p => p.id === id);
+    if (!pz) return;
+    const updated: LibraryPuzzle = { ...pz, scheduledFor: undefined };
+    setLibrary(prev => prev.map(p => p.id === id ? updated : p));
+    persistUpdate(updated);
+  }
+
+  // Auto-launcher: when scheduledFor <= now, launch the puzzle
+  useEffect(() => {
+    if (activePuzzle) return;
+    const intervalId = setInterval(() => {
+      const t = Date.now();
+      const ready = libraryRef.current.find(p => p.scheduledFor && p.scheduledFor <= t);
+      if (ready) {
+        setLaunchedLibraryId(ready.id);
+        launchPuzzle({
+          question: ready.question, answer: ready.answer,
+          points: ready.points, hint: ready.hint,
+          timeLimit: ready.timeLimit, scheduledFor: ready.scheduledFor,
+        });
+      }
+    }, 5_000);
+    return () => clearInterval(intervalId);
+  }, [activePuzzle, launchPuzzle]);
 
   const isLocked = !!activePuzzle && isRunning && !puzzleSolved;
   const aeCanSave = aeQ.trim() && aeA.trim();
@@ -530,6 +632,10 @@ export function AdminPuzzles() {
                           className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border transition-colors">
                           <Pencil className="h-3.5 w-3.5" /> Edit
                         </button>
+                        <button onClick={cancelPuzzle}
+                          className="flex items-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/60 transition-colors">
+                          <X className="h-3.5 w-3.5" /> Cancel
+                        </button>
                       </>
                     ) : (
                       <button onClick={stopPuzzleTimer}
@@ -549,13 +655,33 @@ export function AdminPuzzles() {
         </motion.div>
       )}
 
+      {/* Scheduled Puzzles — 5-minute window */}
+      {scheduledUpcoming.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="h-4 w-4 text-amber-400" />
+            <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">Scheduled</h3>
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400">{scheduledUpcoming.length}</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AnimatePresence>
+              {scheduledUpcoming.map(pz => (
+                <motion.div key={pz.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
+                  <ScheduledCard pz={pz} onCancelSchedule={() => handleCancelSchedule(pz.id)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </section>
+      )}
+
       {/* Puzzle Library */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Library className="h-4 w-4 text-gold" />
             <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">Puzzle Library</h3>
-            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">{library.length}</span>
+            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">{libraryVisible.length}</span>
           </div>
           <button onClick={() => { setShowCreator(true); setEditingId(null); }}
             className="flex items-center gap-1.5 rounded-lg bg-[hsl(288_80%_62%)] px-3 py-1.5 text-xs font-bold text-white hover:bg-[hsl(288_80%_55%)] transition-colors">
@@ -572,12 +698,12 @@ export function AdminPuzzles() {
               />
             </motion.div>
           )}
-          {library.length === 0 && !showCreator && (
+          {libraryVisible.length === 0 && !showCreator && (
             <div className="col-span-2 rounded-xl border border-dashed border-border/50 py-8 text-center text-sm text-muted-foreground">
               Library is empty — click + New Puzzle to get started.
             </div>
           )}
-          {library.map(pz => (
+          {libraryVisible.map(pz => (
             <motion.div key={pz.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <LibraryCard
                 pz={pz}

@@ -431,10 +431,14 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
 
   const addAnnouncement = useCallback((text: string) => {
     const id = crypto.randomUUID();
-    setAnnouncements(prev => [{ id, text, timestamp: new Date().toISOString() }, ...prev]);
     if (isSupabaseConfigured) {
+      // Don't optimistically update — realtime INSERT fires immediately and updates state
+      // via useAnnouncements → rawAnnouncements → setAnnouncements, avoiding duplicates
       supabase.from("announcements").insert({ id, text, emoji: "📢" })
         .then(({ error }) => { if (error) console.error("[Supabase] addAnnouncement:", error.message); });
+    } else {
+      // Mock mode only — no realtime, so optimistic update is the only path
+      setAnnouncements(prev => [{ id, text, timestamp: new Date().toISOString() }, ...prev]);
     }
   }, []);
 

@@ -257,7 +257,7 @@ function TeamColumn({ team, players }: { team: TeamDef; players: RegistrationPla
       </div>
 
       {/* Player cards */}
-      <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 260px)" }}>
+      <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 320px)" }}>
         <AnimatePresence initial={false}>
           {isEmpty ? (
             <motion.div
@@ -418,18 +418,59 @@ export function LiveJoinView() {
 
       <div className="relative z-10 flex flex-col gap-5 px-6 pb-6 pt-4">
         {/* Header */}
-        <div className="flex flex-col items-center gap-2 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">
-            TodFod Season 2
-          </p>
-          <h1
-            className="text-4xl font-black tracking-tight"
-            style={{ color: GOLD, textShadow: `0 0 40px ${GOLD}60` }}
+        <div className="flex flex-col items-center gap-3 text-center">
+          {/* Season badge */}
+          <motion.div
+            className="flex items-center gap-2 rounded-full px-5 py-1.5"
+            style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}40` }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="text-sm">🏆</span>
+            <span
+              className="text-xs font-bold uppercase tracking-[0.25em]"
+              style={{ color: GOLD }}
+            >
+              TodFod Season 2
+            </span>
+            <span className="text-sm">🏆</span>
+          </motion.div>
+
+          {/* Main title */}
+          <motion.h1
+            className="text-5xl font-black tracking-tight leading-none sm:text-6xl"
+            style={{
+              background: `linear-gradient(135deg, ${GOLD} 0%, hsl(38 95% 82%) 50%, ${GOLD} 100%)`,
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: `drop-shadow(0 0 28px ${GOLD}55)`,
+            }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
             Team Registration
-          </h1>
+          </motion.h1>
 
-          <div className="mt-1 flex items-center gap-3">
+          {/* Tagline */}
+          <motion.p
+            className="text-sm tracking-wide text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            Pick your team · Prove your worth
+          </motion.p>
+
+          {/* Live + count row */}
+          <motion.div
+            className="mt-0.5 flex items-center gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
             {/* Live badge */}
             <motion.div
               className="flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5"
@@ -447,21 +488,20 @@ export function LiveJoinView() {
                 }}
                 transition={{ duration: 1.2, repeat: Infinity }}
               />
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">
-                Live
-              </span>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">Live</span>
             </motion.div>
 
             {/* Total count — bumps on each new registration */}
             <motion.div
               key={totalRegistered}
-              className="rounded-full border border-border/40 bg-card/60 px-4 py-1.5 text-xs font-semibold text-muted-foreground"
+              className="flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-4 py-1.5 text-xs font-semibold text-muted-foreground"
               animate={{ scale: [1, 1.12, 1] }}
               transition={{ duration: 0.25 }}
             >
+              <Users className="h-3 w-3" />
               {totalRegistered} registered
             </motion.div>
-          </div>
+          </motion.div>
         </div>
 
         {/* 6 team columns */}

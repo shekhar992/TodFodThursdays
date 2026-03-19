@@ -340,7 +340,7 @@ export function AdminPuzzles() {
     launchPuzzle, startPuzzleTimer, stopPuzzleTimer, cancelPuzzle,
   } = useArena();
 
-  const [library, setLibrary] = useState<LibraryPuzzle[]>(SEED_LIBRARY);
+  const [library, setLibrary] = useState<LibraryPuzzle[]>(isSupabaseConfigured ? [] : SEED_LIBRARY);
   const [libraryLoading, setLibraryLoading] = useState(isSupabaseConfigured);
 
   // ── Load library from Supabase on mount ──────────────────────────────

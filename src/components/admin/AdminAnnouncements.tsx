@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useArena } from "@/context/ArenaContext";
-import { Send, Trash2 } from "lucide-react";
+import { Send, Trash2, Pin, PinOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const inputCls = "w-full rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold/40 focus:border-gold/40 transition-colors";
@@ -8,7 +8,7 @@ const labelCls = "block text-xs font-semibold uppercase tracking-wider text-mute
 const MAX = 120;
 
 export function AdminAnnouncements() {
-  const { addAnnouncement, deleteAnnouncement, announcements } = useArena();
+  const { addAnnouncement, deleteAnnouncement, pinAnnouncement, announcements } = useArena();
   const [text, setText] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -63,16 +63,31 @@ export function AdminAnnouncements() {
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2 rounded-lg border border-border/50 bg-card/30 px-3 py-2.5"
+                  className={`flex items-start gap-2 rounded-lg border px-3 py-2.5 ${
+                    a.pinned
+                      ? "border-gold/40 bg-gold/8"
+                      : "border-border/50 bg-card/30"
+                  }`}
                 >
                   <span className="mt-0.5 text-base shrink-0">📣</span>
                   <p className="flex-1 text-xs leading-relaxed text-foreground/90">{a.text}</p>
-                  <button
-                    onClick={() => deleteAnnouncement(a.id)}
-                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => pinAnnouncement(a.id, !a.pinned)}
+                      title={a.pinned ? "Unpin" : "Pin to top"}
+                      className={`transition-colors ${
+                        a.pinned ? "text-gold hover:text-gold/60" : "text-muted-foreground hover:text-gold"
+                      }`}
+                    >
+                      {a.pinned ? <Pin className="h-3.5 w-3.5 fill-gold" /> : <PinOff className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => deleteAnnouncement(a.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>

@@ -1,21 +1,24 @@
 import { useArena } from "@/context/ArenaContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, ChevronDown, ChevronUp, Calendar, Zap, Users } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isMockMode } from "@/lib/mockAuth";
 
 function AnimatedScore({ value }: { value: number }) {
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(value);
 
   useEffect(() => {
-    let start = 0;
-    const duration = 800;
+    const from = prevRef.current;
+    prevRef.current = value;
+    if (from === value) return;
+    const duration = 900;
     const startTime = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(Math.round(start + (value - start) * eased));
+      setDisplay(Math.round(from + (value - from) * eased));
       if (progress < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);

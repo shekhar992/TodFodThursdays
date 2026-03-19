@@ -15,6 +15,7 @@ type AnnouncementsRow = {
   text: string;
   emoji: string;
   created_at: string;
+  pinned: boolean;
 };
 
 type EventsRow = {

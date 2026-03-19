@@ -43,7 +43,7 @@ export interface ArenaEvent {
   memories?: string[];  // image URLs uploaded by admin
 }
 
-export interface Announcement { id: string; text: string; timestamp: string; }
+export interface Announcement { id: string; text: string; timestamp: string; pinned?: boolean; }
 
 export interface Puzzle {
   id: string;
@@ -89,6 +89,7 @@ interface ArenaActions {
   deleteEvent: (id: string) => void;
   addAnnouncement: (text: string) => void;
   deleteAnnouncement: (id: string) => void;
+  pinAnnouncement: (id: string, pinned: boolean) => void;
   launchPuzzle: (puzzle: Omit<Puzzle, "id" | "timerRunning" | "startedAt" | "expiresAt">) => void;
   startPuzzleTimer: () => void;
   stopPuzzleTimer: () => void;
@@ -169,6 +170,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         id: a.id,
         text: (a as any).emoji ? `${(a as any).emoji} ${a.text}` : a.text,
         timestamp: (a as any).created_at ?? new Date().toISOString(),
+        pinned: (a as any).pinned ?? false,
       })));
     }
   }, [rawAnnouncements]);
@@ -434,7 +436,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     if (isSupabaseConfigured) {
       // Don't optimistically update — realtime INSERT fires immediately and updates state
       // via useAnnouncements → rawAnnouncements → setAnnouncements, avoiding duplicates
-      supabase.from("announcements").insert({ id, text, emoji: "📢" })
+      supabase.from("announcements").insert({ id, text, emoji: "📢", pinned: false })
         .then(({ error }) => { if (error) console.error("[Supabase] addAnnouncement:", error.message); });
     } else {
       // Mock mode only — no realtime, so optimistic update is the only path
@@ -447,6 +449,14 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     if (isSupabaseConfigured) {
       supabase.from("announcements").delete().eq("id", id)
         .then(({ error }) => { if (error) console.error("[Supabase] deleteAnnouncement:", error.message); });
+    }
+  }, []);
+
+  const pinAnnouncement = useCallback((id: string, pinned: boolean) => {
+    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, pinned } : a));
+    if (isSupabaseConfigured) {
+      supabase.from("announcements").update({ pinned }).eq("id", id)
+        .then(({ error }) => { if (error) console.error("[Supabase] pinAnnouncement:", error.message); });
     }
   }, []);
 
@@ -606,7 +616,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   return (
     <ArenaContext.Provider value={{
       teams, events, announcements, activePuzzle, completedPuzzles, puzzleSolved, solvedTeams, stageMode,
-      addEvent, updateEvent, deleteEvent, addAnnouncement, deleteAnnouncement,
+      addEvent, updateEvent, deleteEvent, addAnnouncement, deleteAnnouncement, pinAnnouncement,
       launchPuzzle, startPuzzleTimer, stopPuzzleTimer, cancelPuzzle, solvePuzzle, updateScore, setStageModeActive,
     }}>
       {children}

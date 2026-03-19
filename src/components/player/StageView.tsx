@@ -316,19 +316,18 @@ export function StageView() {
         )}
 
         <motion.h1
+          className="font-carnival uppercase tracking-[0.08em]"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.55 }}
           style={{
             fontSize: "clamp(2.2rem, 5.5vw, 4.5rem)",
             lineHeight: 1.1,
+            color: "hsl(43 93% 62%)",
+            textShadow: "0 0 30px hsl(43 93% 55% / 0.7), 0 0 60px hsl(38 92% 45% / 0.35), 0 1px 3px hsl(248 32% 3% / 0.9)",
           }}
         >
-          <ShimmerTitle
-            className="font-carnival uppercase tracking-[0.08em] bg-gradient-to-b from-amber-200 via-gold to-amber-500 bg-clip-text text-transparent"
-          >
-            {liveEvent?.title ?? "TFT Arena — Season 2"}
-          </ShimmerTitle>
+          {liveEvent?.title ?? "TFT Arena — Season 2"}
         </motion.h1>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>

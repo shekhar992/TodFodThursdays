@@ -36,11 +36,8 @@ export function HeroBanner() {
         className="font-carnival relative mx-auto mb-3 leading-none tracking-[0.04em]"
         style={{
           fontSize: "clamp(48px, 10vw, 96px)",
-          background: "linear-gradient(160deg, #fff8e1 0%, hsl(43 93% 60%) 45%, hsl(38 92% 50%) 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-          filter: "drop-shadow(0 0 28px hsl(43 93% 60% / 0.35))",
+          color: "hsl(43 93% 62%)",
+          textShadow: "0 0 30px hsl(43 93% 55% / 0.7), 0 0 60px hsl(38 92% 45% / 0.35), 0 1px 3px hsl(248 32% 3% / 0.9)",
         }}
       >
         TFT ARENA
@@ -62,16 +59,7 @@ export function HeroBanner() {
           <span className="text-muted-foreground/40">·</span>
           <span className="text-sm font-bold uppercase tracking-widest text-foreground/90">One Champion</span>
         </div>
-        <p
-          className="font-carnival text-lg tracking-wide uppercase"
-          style={{
-            background: "linear-gradient(90deg, hsl(38 92% 50%), hsl(43 93% 72%), hsl(38 92% 50%))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            filter: "drop-shadow(0 0 12px hsl(43 93% 60% / 0.4))",
-          }}
-        >
+        <p className="font-carnival text-lg tracking-wide uppercase" style={{ color: "hsl(43 93% 60%)", textShadow: "0 1px 0 hsl(38 80% 30%)" }}>
           Glory is earned. Not given.
         </p>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Users } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -80,13 +80,13 @@ const GOLD = "hsl(43 93% 60%)";
 function Particles() {
   const particles = useMemo(
     () =>
-      [...Array(18)].map((_, i) => ({
+      [...Array(22)].map((_, i) => ({
         id: i,
         left: `${4 + Math.random() * 92}%`,
-        size: 1.5 + Math.random() * 2.5,
+        size: 2 + Math.random() * 3,
         delay: Math.random() * 8,
-        duration: 7 + Math.random() * 9,
-        opacity: 0.12 + Math.random() * 0.35,
+        duration: 6 + Math.random() * 8,
+        opacity: 0.15 + Math.random() * 0.45,
       })),
     [],
   );
@@ -115,19 +115,19 @@ function Particles() {
 function LightRays() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {[...Array(6)].map((_, i) => (
+      {[...Array(8)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute top-0 left-1/2 origin-top"
           style={{
             width: "2px",
-            height: "60vh",
+            height: "65vh",
             background: `linear-gradient(to bottom, ${GOLD}, transparent)`,
-            transform: `translateX(-50%) rotate(${-30 + i * 12}deg)`,
+            transform: `translateX(-50%) rotate(${-42 + i * 12}deg)`,
           }}
           initial={{ opacity: 0.02 }}
-          animate={{ opacity: [0.02, 0.05, 0.02] }}
-          transition={{ duration: 3 + i * 0.5, delay: i * 0.4, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ opacity: [0.02, 0.055, 0.02] }}
+          transition={{ duration: 2.5 + i * 0.4, delay: i * 0.3, repeat: Infinity, ease: "easeInOut" }}
         />
       ))}
     </div>
@@ -158,6 +158,25 @@ function CornerOrnaments() {
       {pos.map((cls, i) => (
         <div key={i} className={`absolute w-10 h-10 border-gold/20 ${cls}`} />
       ))}
+    </div>
+  );
+}
+
+// ── Shimmer sweep title (mirrors StageView) ──────────────────────────────────
+function ShimmerTitle({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className="relative inline-block overflow-hidden">
+      <span className={className} style={style}>{children}</span>
+      <motion.span
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)",
+          backgroundSize: "200% 100%",
+        }}
+        initial={{ backgroundPosition: "200% center" }}
+        animate={{ backgroundPosition: "-200% center" }}
+        transition={{ duration: 1.4, delay: 1.0, repeat: Infinity, repeatDelay: 5, ease: "easeInOut" }}
+      />
     </div>
   );
 }
@@ -405,9 +424,31 @@ export function LiveJoinView() {
   }, [players, teams]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-[hsl(248_32%_4%)]">
+      {/* Scanline texture */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px)",
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Background radial glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 rounded-full"
+          style={{
+            width: "900px",
+            height: "560px",
+            background: `radial-gradient(ellipse, hsl(43 93% 60% / 0.12) 0%, transparent 70%)`,
+            filter: "blur(48px)",
+          }}
+        />
+        <LightRays />
+      </div>
+
       <Particles />
-      <LightRays />
       <Vignette />
       <CornerOrnaments />
 
@@ -417,88 +458,88 @@ export function LiveJoinView() {
       </div>
 
       <div className="relative z-10 flex flex-col gap-5 px-6 pb-6 pt-4">
-        {/* Header */}
-        <div className="flex flex-col items-center gap-3 text-center">
-          {/* Season badge */}
-          <motion.div
-            className="flex items-center gap-2 rounded-full px-5 py-1.5"
-            style={{ background: `${GOLD}18`, border: `1px solid ${GOLD}40` }}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+        {/* Hero */}
+        <div className="flex flex-col items-center pt-10 pb-4 text-center">
+
+          {/* Trophy icon — floats gently like StageView event emoji */}
+          <motion.span
+            className="mb-4 block text-6xl"
+            style={{ filter: "drop-shadow(0 0 28px hsl(43 93% 60% / 0.6))" }}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
           >
-            <span className="text-sm">🏆</span>
-            <span
-              className="text-xs font-bold uppercase tracking-[0.25em]"
-              style={{ color: GOLD }}
-            >
-              TodFod Season 2
-            </span>
-            <span className="text-sm">🏆</span>
-          </motion.div>
+            🏆
+          </motion.span>
 
           {/* Main title */}
           <motion.h1
-            className="text-5xl font-black tracking-tight leading-none sm:text-6xl"
-            style={{
-              background: `linear-gradient(135deg, ${GOLD} 0%, hsl(38 95% 82%) 50%, ${GOLD} 100%)`,
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              filter: `drop-shadow(0 0 28px ${GOLD}55)`,
-            }}
-            initial={{ opacity: 0, y: 8 }}
+            className="font-carnival uppercase tracking-[0.06em] relative"
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ delay: 0.15, duration: 0.55 }}
+            style={{
+              fontSize: "clamp(2.4rem, 6vw, 5rem)",
+              lineHeight: 1.05,
+              color: "hsl(43 93% 62%)",
+              textShadow: "0 0 30px hsl(43 93% 55% / 0.7), 0 0 60px hsl(38 92% 45% / 0.35), 0 1px 3px hsl(248 32% 3% / 0.9)",
+            }}
           >
             Team Registration
           </motion.h1>
 
-          {/* Tagline */}
-          <motion.p
-            className="text-sm tracking-wide text-muted-foreground"
+          {/* — Season 2 — divider (mirrors HeroBanner) */}
+          <motion.div
+            className="my-4 flex items-center gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-gold/50" />
+            <span className="text-[13px] font-bold tracking-[0.22em] uppercase" style={{ color: "hsl(288 80% 72%)" }}>
+              — Season 2 —
+            </span>
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-gold/50" />
+          </motion.div>
+
+          {/* Tagline */}
+          <motion.p
+            className="font-carnival text-base tracking-wide uppercase"
+            style={{ color: "hsl(43 93% 60%)", textShadow: "0 1px 0 hsl(38 80% 30%)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.38 }}
           >
             Pick your team · Prove your worth
           </motion.p>
 
-          {/* Live + count row */}
+          {/* Live badge + count — matches StageView LiveBadge */}
           <motion.div
-            className="mt-0.5 flex items-center gap-3"
+            className="mt-5 flex items-center gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ delay: 0.48 }}
           >
-            {/* Live badge */}
             <motion.div
-              className="flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5"
-              animate={{ scale: [1, 1.03, 1] }}
+              className="flex items-center gap-2.5 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5"
+              animate={{ scale: [1, 1.04, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             >
               <motion.span
-                className="h-2 w-2 shrink-0 rounded-full bg-red-500"
-                animate={{
-                  boxShadow: [
-                    "0 0 4px 0px hsl(0 80% 60%)",
-                    "0 0 12px 4px hsl(0 80% 60%)",
-                    "0 0 4px 0px hsl(0 80% 60%)",
-                  ],
-                }}
-                transition={{ duration: 1.2, repeat: Infinity }}
+                className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"
+                animate={{ boxShadow: ["0 0 6px 0px hsl(0 80% 60%)", "0 0 14px 4px hsl(0 80% 60%)", "0 0 6px 0px hsl(0 80% 60%)"] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
               />
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">Live</span>
+              <span className="text-xs font-bold uppercase tracking-[0.25em] text-red-400">Live Now</span>
             </motion.div>
 
-            {/* Total count — bumps on each new registration */}
             <motion.div
               key={totalRegistered}
-              className="flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-4 py-1.5 text-xs font-semibold text-muted-foreground"
-              animate={{ scale: [1, 1.12, 1] }}
-              transition={{ duration: 0.25 }}
+              className="flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold/10 px-4 py-1.5 text-xs font-bold"
+              style={{ color: GOLD }}
+              animate={{ scale: [1, 1.14, 1] }}
+              transition={{ duration: 0.28 }}
             >
-              <Users className="h-3 w-3" />
+              <Users className="h-3.5 w-3.5" />
               {totalRegistered} registered
             </motion.div>
           </motion.div>

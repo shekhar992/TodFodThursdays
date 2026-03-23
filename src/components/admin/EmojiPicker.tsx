@@ -2,20 +2,24 @@ import { useState, useRef, useEffect } from "react";
 
 const EMOJI_GROUPS = [
   {
+    label: "Shoutouts & Recognition",
+    emojis: ["⭐", "👑", "🩸", "⚡", "🔥", "🎭", "📣", "🌟", "💝", "🎯", "🧠", "😂", "🛡️", "🏅", "🎖️", "💎", "🤝", "🫶"],
+  },
+  {
     label: "Events & Games",
-    emojis: ["🎯", "🏆", "🎮", "🎲", "🎪", "🎭", "🎨", "🎬", "🎤", "🎸", "🏋️", "🤸", "🏊", "🎾", "⚽", "🏸", "🎳", "🥊", "🧗", "🏄"],
+    emojis: ["🏆", "🎮", "🎲", "🎪", "🎨", "🎬", "🎤", "🎸", "🏋️", "🤸", "🏊", "🎾", "⚽", "🏸", "🎳", "🥊", "🧗", "🏄"],
   },
   {
     label: "Awards",
-    emojis: ["🥇", "🥈", "🥉", "🏅", "🎖️", "⭐", "🌟", "💎", "👑", "🏵️"],
+    emojis: ["🥇", "🥈", "🥉", "🏵️"],
   },
   {
     label: "Energy",
-    emojis: ["⚡", "🔥", "💥", "🎉", "🎊", "🎁", "🪄", "🚀", "💫", "✨"],
+    emojis: ["💥", "🎉", "🎊", "🎁", "🪄", "🚀", "💫", "✨"],
   },
   {
     label: "Misc",
-    emojis: ["📅", "🧩", "🧠", "🗺️", "🔑", "💡", "🃏", "🕹️", "🌍", "🐉", "🦁", "🧪", "🔭", "🌊"],
+    emojis: ["📅", "🧩", "🗺️", "🔑", "💡", "🃏", "🕹️", "🌍", "🐉", "🦁", "🧪", "🔭", "🌊"],
   },
 ];
 
@@ -48,7 +52,7 @@ export function EmojiPicker({ value, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-64 rounded-xl border border-border bg-card p-3 shadow-xl">
+        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 rounded-xl border border-gold/30 bg-card p-3 shadow-[0_8px_32px_rgba(0,0,0,0.45),0_0_0_1px_rgba(245,184,0,0.10)]">
           {EMOJI_GROUPS.map(group => (
             <div key={group.label} className="mb-3 last:mb-0">
               <p className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">

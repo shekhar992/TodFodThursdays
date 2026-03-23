@@ -44,6 +44,9 @@ type EventsRow = {
     rules?: string[];
     pointsBreakdown?: { place: string; pts: number }[];
   } | null;
+  // Timestamp fields added in migration 011
+  started_at: string | null;
+  completed_at: string | null;
 };
 
 type ArenaSettingsRow = {
@@ -110,6 +113,22 @@ type ProfilesRow = {
   created_at: string;
 };
 
+type ShoutoutsRow = {
+  id: string;
+  event_id: string | null;
+  event_title: string | null;
+  badge_name: string;
+  badge_emoji: string;
+  recipient_type: 'player' | 'team';
+  recipient_name: string;
+  team_id: string | null;
+  team_name: string | null;
+  points: number;
+  status: 'pending' | 'published' | 'dismissed';
+  published_at: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -159,6 +178,12 @@ export type Database = {
         Row: ProfilesRow;
         Insert: Omit<ProfilesRow, 'created_at'>;
         Update: Partial<Omit<ProfilesRow, 'created_at'>>;
+        Relationships: [];
+      };
+      shoutouts: {
+        Row: ShoutoutsRow;
+        Insert: Omit<ShoutoutsRow, 'created_at' | 'id'> & { id?: string };
+        Update: Partial<Omit<ShoutoutsRow, 'created_at'>>;
         Relationships: [];
       };
     };

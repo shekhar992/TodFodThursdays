@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Megaphone, Puzzle, BarChart3, Users, UserCheck, Shield, Tv, Send } from "lucide-react";
+import { Calendar, Megaphone, Puzzle, BarChart3, Users, UserCheck, Shield, Tv, Send, Star } from "lucide-react";
 import { AdminEvents } from "./AdminEvents";
 import { AdminAnnouncements } from "./AdminAnnouncements";
 import { AdminPuzzles } from "./AdminPuzzles";
@@ -8,6 +8,7 @@ import { AdminPreview } from "./AdminPreview";
 import { AdminUsers } from "./AdminUsers";
 import { AdminPlayers } from "./AdminPlayers";
 import { AdminTeams } from "./AdminTeams";
+import { AdminShoutouts } from "./AdminShoutouts";
 import { useArena } from "@/context/ArenaContext";
 
 const QUICK_PRESETS = ["🧩 Puzzle is live!", "⏰ Round ended!", "🏆 Check the leaderboard!", "📍 Move to next station", "🎉 Last round — give it your all!"];
@@ -67,6 +68,7 @@ const sections = [
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "puzzles", label: "Puzzles", icon: Puzzle },
   { id: "scores", label: "Scores", icon: BarChart3 },
+  { id: "shoutouts", label: "Shoutouts", icon: Star },
   { id: "teams", label: "Teams", icon: Shield },
   { id: "players", label: "Players", icon: UserCheck },
   { id: "users", label: "Admin Users", icon: Users },
@@ -160,6 +162,7 @@ export function AdminPanel() {
             {active === "announcements" && <AdminAnnouncements />}
             {active === "puzzles" && <AdminPuzzles />}
             {active === "scores" && <AdminScores />}
+            {active === "shoutouts" && <AdminShoutouts />}
             {active === "teams" && <AdminTeams />}
             {active === "players" && <AdminPlayers />}
             {active === "users" && <AdminUsers />}

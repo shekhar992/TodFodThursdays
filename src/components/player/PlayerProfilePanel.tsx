@@ -336,10 +336,10 @@ export function PlayerProfilePanel() {
             <div className="px-4 py-3 flex flex-col gap-2">
               {teamEventHistory.map(({ event: ev, result }, i) => {
                 const place = result?.place ?? "";
-                const placeBadge = place.includes("1") || place.includes("🥇") ? "🥇"
+                const medal = place.includes("1") || place.includes("🥇") ? "🥇"
                   : place.includes("2") || place.includes("🥈") ? "🥈"
                   : place.includes("3") || place.includes("🥉") ? "🥉"
-                  : place ? place : null;
+                  : null;
                 const catColor = (categoryColors as Record<string, string>)[ev.category] ?? "hsl(38 92% 50%)";
                 return (
                   <motion.div
@@ -349,9 +349,13 @@ export function PlayerProfilePanel() {
                     transition={{ delay: i * 0.05 }}
                     className="flex items-center gap-2.5"
                   >
-                    <span className="text-base leading-none shrink-0 w-5 text-center">
-                      {placeBadge ?? <span className="text-[10px] text-muted-foreground/60">#?</span>}
-                    </span>
+                    {medal ? (
+                      <span className="text-sm leading-none shrink-0 w-5 text-center">{medal}</span>
+                    ) : (
+                      <span className="shrink-0 inline-flex items-center justify-center rounded px-1 py-0.5 text-[9px] font-bold tabular-nums leading-none bg-secondary/80 text-muted-foreground border border-border/50 min-w-[22px]">
+                        {place || "–"}
+                      </span>
+                    )}
                     <span className="text-base leading-none shrink-0">{ev.emoji || "📅"}</span>
                     <div className="flex flex-col min-w-0 flex-1">
                       <span className="text-xs font-medium truncate text-foreground">{ev.title}</span>

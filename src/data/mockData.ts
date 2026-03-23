@@ -24,6 +24,7 @@ export interface Event {
   date: string;
   status: 'upcoming' | 'live' | 'completed';
   participants?: number;
+  started_at?: string; // ISO string — set when event goes live
   // Lifecycle fields (from migration 007)
   winner_team_id?: string | null;
   winner_team_name?: string | null;
@@ -153,8 +154,9 @@ export const mockHighlightEvents: Event[] = [
   { id: 'p5', title: 'Hackathon Sprint',      category: 'Tech',     date: '2025-03-10', description: '4-hour build challenge',           image: '', status: 'completed' },
 ];
 
+// u1 is 'live' with startedAt ~20 min ago — lets you see the stage countdown + events page live timer in mock mode
 export const mockUpcomingEvents: Event[] = [
-  { id: 'u1', title: 'Treasure Hunt',         category: 'Adventure',    date: '2026-03-15', description: 'Campus-wide hunt with cryptic location clues and photo checkpoints',   image: '', status: 'upcoming' },
+  { id: 'u1', title: 'Treasure Hunt',         category: 'Adventure',    date: '2026-03-15', description: 'Campus-wide hunt with cryptic location clues and photo checkpoints',   image: '', status: 'live', started_at: new Date(Date.now() - 20 * 60 * 1000).toISOString() },
   { id: 'u2', title: 'Digital Escape Room',   category: 'Puzzle',       date: '2026-03-19', description: 'Five layered digital puzzles — solve them faster than every other team', image: '', status: 'upcoming' },
   { id: 'u3', title: 'Outdoor Relay Wars',    category: 'Physical',     date: '2026-03-22', description: 'Four physical challenges, one relay format, and serious bragging rights', image: '', status: 'upcoming' },
   { id: 'u4', title: 'Debate Duel',           category: 'Strategy',     date: '2026-03-26', description: 'Topic revealed 10 min before start. No prep. Pure wits.',                image: '', status: 'upcoming' },
@@ -162,13 +164,15 @@ export const mockUpcomingEvents: Event[] = [
   { id: 'u6', title: 'Grand Finale',          category: 'Grand Finale', date: '2026-04-05', description: 'Three rounds, all disciplines, one champion. The season ends here.',      image: '', status: 'upcoming' },
 ];
 
+// isActive: false so player dashboard shows Last Event Highlights by default.
+// Admin can launch this puzzle from Admin → Puzzles to demo real-time puzzle flow.
 export const mockActivePuzzle: Puzzle = {
   id: 'pz1',
   question: "I'm always hungry and must always be fed. The finger I lick will soon turn red. What am I?",
   answer: 'fire',
   hint: 'Think heat, light, and danger.',
   points: 50,
-  isActive: true,
+  isActive: false,
 };
 
 // ─── Rich event details (for EventsView demo) ────────────────────────────────
@@ -405,9 +409,122 @@ export interface PastPuzzle {
   solvedBy: string;
   solvedByLogo: string;
   solvedByTeamId?: string;
+  solvedByPlayer?: string;
   date: string;
   scheduledFor?: number;  // ms timestamp
 }
+
+// ─── Dev-only: Players (2 per team, for shoutout cascade dropdown) ──────────
+export interface MockPlayer {
+  id: string;
+  display_name: string;
+  team_id: string;
+}
+export const mockPlayers: MockPlayer[] = [
+  { id: 'p-t1-1', display_name: 'Alex Chen',    team_id: '1' },
+  { id: 'p-t1-2', display_name: 'Jordan Lee',   team_id: '1' },
+  { id: 'p-t2-1', display_name: 'Sam Rivera',   team_id: '2' },
+  { id: 'p-t2-2', display_name: 'Morgan Kim',   team_id: '2' },
+  { id: 'p-t3-1', display_name: 'Taylor Singh', team_id: '3' },
+  { id: 'p-t3-2', display_name: 'Casey Patel',  team_id: '3' },
+  { id: 'p-t4-1', display_name: 'Riley Nguyen', team_id: '4' },
+  { id: 'p-t4-2', display_name: 'Jamie Gupta',  team_id: '4' },
+  { id: 'p-t5-1', display_name: 'Quinn Das',    team_id: '5' },
+  { id: 'p-t5-2', display_name: 'Drew Sharma',  team_id: '5' },
+  { id: 'p-t6-1', display_name: 'Avery Mehta',  team_id: '6' },
+  { id: 'p-t6-2', display_name: 'Blake Joshi',  team_id: '6' },
+];
+
+// ─── Dev-only: Shoutout seed data ─────────────────────────────────────────────
+export interface MockShoutoutRow {
+  id: string; eventId: string | null; eventTitle: string | null;
+  badgeName: string; badgeEmoji: string;
+  recipientType: 'player' | 'team'; recipientName: string;
+  teamId: string | null; teamName: string | null;
+  points: number; status: 'pending' | 'published' | 'dismissed';
+  publishedAt: string | null; createdAt: string;
+}
+const _now = Date.now();
+// ── Event IDs match mockHighlightEvents ('p1'–'p5') and mockUpcomingEvents ('u1'–'u6') ──
+// 'p5' = Hackathon Sprint (most recent) → pending auto-badges
+// 'p4' = Strategy Blitz (previous)      → published event shoutouts shown on player dashboard
+export const mockShoutoutsInitial: MockShoutoutRow[] = [
+  // ── Pending auto-badges from Hackathon Sprint (admin can publish/dismiss/edit pts) ──
+  { id: 'shout-p1', eventId: 'p5', eventTitle: 'Hackathon Sprint',
+    badgeName: 'Event Champion', badgeEmoji: '👑', recipientType: 'team',
+    recipientName: 'Team Mavericks', teamId: '3', teamName: 'Team Mavericks',
+    points: 0, status: 'pending', publishedAt: null,
+    createdAt: new Date(_now - 60 * 60 * 1000).toISOString() },
+  { id: 'shout-p2', eventId: 'p5', eventTitle: 'Hackathon Sprint',
+    badgeName: 'Speed Demon · 8s', badgeEmoji: '⚡', recipientType: 'player',
+    recipientName: 'Alex Chen', teamId: '1', teamName: 'Team Titans',
+    points: 0, status: 'pending', publishedAt: null,
+    createdAt: new Date(_now - 55 * 60 * 1000).toISOString() },
+  { id: 'shout-p3', eventId: 'p5', eventTitle: 'Hackathon Sprint',
+    badgeName: 'First Blood', badgeEmoji: '🩸', recipientType: 'player',
+    recipientName: 'Sam Rivera', teamId: '2', teamName: 'Team Phoenix',
+    points: 0, status: 'pending', publishedAt: null,
+    createdAt: new Date(_now - 50 * 60 * 1000).toISOString() },
+  { id: 'shout-p4', eventId: 'p5', eventTitle: 'Hackathon Sprint',
+    badgeName: 'On Fire · 3 solves', badgeEmoji: '🔥', recipientType: 'team',
+    recipientName: 'Team Titans', teamId: '1', teamName: 'Team Titans',
+    points: 0, status: 'pending', publishedAt: null,
+    createdAt: new Date(_now - 45 * 60 * 1000).toISOString() },
+
+  // ── Published from Strategy Blitz → appears on player Dashboard Highlights rail ──
+  { id: 'shout-1', eventId: 'p4', eventTitle: 'Strategy Blitz',
+    badgeName: 'Event Champion', badgeEmoji: '👑', recipientType: 'team',
+    recipientName: 'Team Phoenix', teamId: '2', teamName: 'Team Phoenix',
+    points: 0, status: 'published',
+    publishedAt: new Date(_now - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: 'shout-2', eventId: 'p4', eventTitle: 'Strategy Blitz',
+    badgeName: 'Spirit Award', badgeEmoji: '🌟', recipientType: 'team',
+    recipientName: 'Team Phoenix', teamId: '2', teamName: 'Team Phoenix',
+    points: 10, status: 'published',
+    publishedAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 300000).toISOString(),
+    createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 300000).toISOString() },
+  { id: 'shout-3', eventId: 'p4', eventTitle: 'Strategy Blitz',
+    badgeName: 'Best Dressed', badgeEmoji: '🎭', recipientType: 'player',
+    recipientName: 'Morgan Kim', teamId: '2', teamName: 'Team Phoenix',
+    points: 5, status: 'published',
+    publishedAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 600000).toISOString(),
+    createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 600000).toISOString() },
+  { id: 'shout-4', eventId: 'p4', eventTitle: 'Strategy Blitz',
+    badgeName: 'Sportsmanship', badgeEmoji: '💝', recipientType: 'team',
+    recipientName: 'Team Titans', teamId: '1', teamName: 'Team Titans',
+    points: 0, status: 'published',
+    publishedAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 900000).toISOString(),
+    createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000 + 900000).toISOString() },
+
+  // ── Manual shoutouts (no event) → visible as recent recognition ──
+  { id: 'shout-5', eventId: null, eventTitle: null,
+    badgeName: 'Comic Relief', badgeEmoji: '😂', recipientType: 'player',
+    recipientName: 'Riley Nguyen', teamId: '4', teamName: 'Team Warriors',
+    points: 0, status: 'published',
+    publishedAt: new Date(_now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(_now - 1 * 24 * 60 * 60 * 1000).toISOString() },
+  { id: 'shout-6', eventId: null, eventTitle: null,
+    badgeName: 'Big Brain', badgeEmoji: '🧠', recipientType: 'player',
+    recipientName: 'Taylor Singh', teamId: '3', teamName: 'Team Mavericks',
+    points: 5, status: 'published',
+    publishedAt: new Date(_now - 12 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(_now - 12 * 60 * 60 * 1000).toISOString() },
+];
+
+// ─── Shared in-memory pub-sub store (mock mode only) ─────────────────────────
+type _SL = () => void;
+let _store: MockShoutoutRow[] = mockShoutoutsInitial.map(s => ({ ...s }));
+const _listeners = new Set<_SL>();
+export const mockShoutoutsStore = {
+  getAll: (): MockShoutoutRow[] => _store,
+  add: (s: MockShoutoutRow) => { _store = [s, ..._store]; _listeners.forEach(fn => fn()); },
+  update: (id: string, p: Partial<MockShoutoutRow>) => {
+    _store = _store.map(s => s.id === id ? { ...s, ...p } : s);
+    _listeners.forEach(fn => fn());
+  },
+  subscribe: (fn: _SL): (() => void) => { _listeners.add(fn); return () => _listeners.delete(fn); },
+};
 
 export const mockPastPuzzles: PastPuzzle[] = [
   {
@@ -419,6 +536,8 @@ export const mockPastPuzzles: PastPuzzle[] = [
     awardedPoints: 70,
     solvedBy: 'Team Phoenix',
     solvedByLogo: '🔥',
+    solvedByTeamId: '2',
+    solvedByPlayer: 'Sam Rivera',
     date: '2026-03-06',
     scheduledFor: new Date('2026-03-06T18:00:00').getTime(),
   },
@@ -431,6 +550,8 @@ export const mockPastPuzzles: PastPuzzle[] = [
     awardedPoints: 35,
     solvedBy: 'Team Titans',
     solvedByLogo: '⚡',
+    solvedByTeamId: '1',
+    solvedByPlayer: 'Alex Chen',
     date: '2026-03-06',
     scheduledFor: new Date('2026-03-06T20:00:00').getTime(),
   },
@@ -443,6 +564,7 @@ export const mockPastPuzzles: PastPuzzle[] = [
     awardedPoints: 110,
     solvedBy: 'Team Mavericks',
     solvedByLogo: '🦅',
+    solvedByTeamId: '3',
     date: '2026-02-27',
     scheduledFor: new Date('2026-02-27T19:00:00').getTime(),
   },

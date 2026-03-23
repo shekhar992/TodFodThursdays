@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useArena } from "@/context/ArenaContext";
 import { categoryColors } from "@/data/mockData";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +16,8 @@ interface EventCardProps {
   rules?: string[];
   pointsBreakdown?: { place: string; pts: number }[];
   isPast?: boolean;
+  status?: string;
+  startedAt?: number; // ms timestamp — set when event goes live
   // Past-event extras
   winnerTeamName?: string;
   winnerTeamLogo?: string;
@@ -29,7 +31,83 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function UpcomingEventCard({ title, category, date, description, emoji, format, duration, rules = [], pointsBreakdown = [] }: EventCardProps) {
+function parseDurationSecs(str?: string): number | null {
+  if (!str) return null;
+  const m = str.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|hr|hrs|hour|hours|sec|secs)/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const u = m[2].toLowerCase();
+  if (u.startsWith('h')) return Math.round(n * 3600);
+  if (u.startsWith('m')) return Math.round(n * 60);
+  return Math.round(n);
+}
+
+// Smart event ticker — shows "Starts in" countdown before live, live duration countdown when live
+function EventTicker({ targetDate, accentColor, status, startedAt, duration }: {
+  targetDate: string; accentColor: string; status?: string; startedAt?: number; duration?: string;
+}) {
+  const isLive = status === 'live';
+  const totalSecs = parseDurationSecs(duration);
+
+  const [display, setDisplay] = useState<{ label: string; value: string; overtime?: boolean } | null>(null);
+
+  useEffect(() => {
+    const calc = () => {
+      if (isLive && startedAt && totalSecs) {
+        const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+        const left = totalSecs - elapsed;
+        const abs = Math.abs(left);
+        const h = Math.floor(abs / 3600);
+        const m = Math.floor((abs % 3600) / 60);
+        const s = abs % 60;
+        const fmt = h > 0
+          ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        setDisplay({ label: left <= 0 ? 'Overtime' : 'Time left', value: left <= 0 ? 'OVERTIME' : fmt, overtime: left <= 0 });
+      } else if (!isLive) {
+        const diff = new Date(targetDate).getTime() - Date.now();
+        if (diff <= 0) { setDisplay(null); return; }
+        const total = Math.floor(diff / 1000);
+        const d = Math.floor(total / 86400);
+        const h = Math.floor((total % 86400) / 3600);
+        const mm = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        const val = d > 0
+          ? `${d}d ${String(h).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m`
+          : `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        setDisplay({ label: 'Starts in', value: val });
+      }
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [targetDate, isLive, startedAt, totalSecs]);
+
+  if (!display) return null;
+
+  const isOvertime = display.overtime;
+  const activeColor = isLive ? (isOvertime ? 'hsl(0 75% 65%)' : 'hsl(142 70% 55%)') : accentColor;
+
+  return (
+    <div
+      className="flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold tabular-nums"
+      style={{ background: `${activeColor}12`, border: `1px solid ${activeColor}30` }}
+    >
+      {isLive && (
+        <span
+          className="h-1.5 w-1.5 rounded-full shrink-0"
+          style={{ background: isOvertime ? 'hsl(0 75% 65%)' : 'hsl(142 70% 55%)', boxShadow: `0 0 6px ${activeColor}` }}
+        />
+      )}
+      <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: `${activeColor}99` }}>
+        {display.label}
+      </span>
+      <span style={{ color: activeColor }}>{display.value}</span>
+    </div>
+  );
+}
+
+function UpcomingEventCard({ title, category, date, description, emoji, format, duration, rules = [], pointsBreakdown = [], status, startedAt }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const accentColor = (categoryColors as Record<string, string>)[category] ?? "hsl(38 92% 50%)";
 
@@ -69,19 +147,13 @@ function UpcomingEventCard({ title, category, date, description, emoji, format, 
           </div>
         </div>
 
-        {/* Meta pills */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className="rounded-full bg-accent/50 px-2.5 py-0.5 text-xs text-muted-foreground">
-            {format || category}
-          </span>
-        </div>
+        {/* Event ticker — starts-in or live duration countdown */}
+        <EventTicker targetDate={date} accentColor={accentColor} status={status} startedAt={startedAt} duration={duration} />
 
-        <p className="text-xs text-muted-foreground leading-relaxed mb-4">{description}</p>
-
-        {/* Expand/collapse rules */}
+        {/* Expand/collapse rules — moved to top */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 text-xs font-medium transition-colors"
+          className="flex items-center gap-1 text-xs font-medium transition-colors mt-3"
           style={{ color: accentColor }}
         >
           {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -121,24 +193,46 @@ function UpcomingEventCard({ title, category, date, description, emoji, format, 
                     Points
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {pointsBreakdown.map((row, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
-                        style={{ borderColor: `${accentColor}25`, background: `${accentColor}0d` }}
-                      >
-                        <span>{row.place}</span>
-                        <span className="font-bold" style={{ color: accentColor }}>
-                          +{row.pts} pts
-                        </span>
-                      </div>
-                    ))}
+                    {pointsBreakdown.map((row, i) => {
+                      const p = row.place ?? "";
+                      const medal = p.includes("1") ? "🥇"
+                        : p.includes("2") ? "🥈"
+                        : p.includes("3") ? "🥉"
+                        : null;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
+                          style={{ borderColor: `${accentColor}25`, background: `${accentColor}0d` }}
+                        >
+                          {medal ? (
+                            <span className="text-sm leading-none">{medal}</span>
+                          ) : (
+                            <span className="inline-flex items-center justify-center rounded px-1 py-0.5 text-[9px] font-bold tabular-nums leading-none bg-black/20 border border-white/10 text-muted-foreground min-w-[22px]">
+                              {p}
+                            </span>
+                          )}
+                          <span className="font-bold" style={{ color: accentColor }}>
+                            +{row.pts} pts
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Meta pills */}
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          <span className="rounded-full bg-accent/50 px-2.5 py-0.5 text-xs text-muted-foreground">
+            {format || category}
+          </span>
+        </div>
+
+        <p className="text-xs text-muted-foreground leading-relaxed mt-3">{description}</p>
       </div>
     </motion.div>
   );
@@ -249,27 +343,40 @@ function PastEventRow({ title, category, date, emoji, winnerTeamName, winnerTeam
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Results</p>
                   <div className="space-y-1.5">
-                    {results.map((r, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-center justify-between rounded-lg px-3 py-2 ${i === 0 ? "bg-card border" : "bg-muted/30"}`}
-                        style={i === 0 ? { borderColor: `${accentColor}25`, background: `${accentColor}08` } : {}}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-base w-5 text-center leading-none">{r.place}</span>
-                          {r.teamLogo && <span className="text-sm">{r.teamLogo}</span>}
-                          <span className={`text-sm ${i === 0 ? "font-semibold text-foreground" : "text-foreground/80"}`}>
-                            {r.teamName ?? "—"}
+                    {results.map((r, i) => {
+                      const p = r.place ?? "";
+                      const medal = p.includes("1") || p.includes("🥇") ? "🥇"
+                        : p.includes("2") || p.includes("🥈") ? "🥈"
+                        : p.includes("3") || p.includes("🥉") ? "🥉"
+                        : null;
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center justify-between rounded-lg px-3 py-2.5 ${i === 0 ? "bg-card border" : "bg-muted/30"}`}
+                          style={i === 0 ? { borderColor: `${accentColor}25`, background: `${accentColor}08` } : {}}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {medal ? (
+                              <span className="text-base w-6 text-center leading-none shrink-0">{medal}</span>
+                            ) : (
+                              <span className="shrink-0 inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none bg-secondary border border-border/60 text-muted-foreground min-w-[26px]">
+                                {p || "–"}
+                              </span>
+                            )}
+                            {r.teamLogo && <span className="text-sm leading-none shrink-0">{r.teamLogo}</span>}
+                            <span className={`text-sm font-medium ${i === 0 ? "font-semibold text-foreground" : "text-foreground/80"}`}>
+                              {r.teamName ?? "—"}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-xs font-bold tabular-nums ${i === 0 ? "" : "text-muted-foreground"}`}
+                            style={i === 0 ? { color: accentColor } : {}}
+                          >
+                            +{r.pts} pts
                           </span>
                         </div>
-                        <span
-                          className={`text-xs font-bold tabular-nums ${i === 0 ? "" : "text-muted-foreground"}`}
-                          style={i === 0 ? { color: accentColor } : {}}
-                        >
-                          +{r.pts} pts
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -365,6 +472,8 @@ export function EventsView() {
                   duration={nextEvent.duration}
                   rules={nextEvent.rules}
                   pointsBreakdown={nextEvent.pointsBreakdown}
+                  status={nextEvent.status}
+                  startedAt={nextEvent.startedAt}
                 />
               </motion.div>
             )}

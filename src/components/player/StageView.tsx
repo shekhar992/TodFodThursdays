@@ -1,5 +1,5 @@
-import { AnnouncementTicker } from "./AnnouncementTicker";
-import { useArena } from "@/context/ArenaContext";
+
+import { useArena, type ArenaEvent } from "@/context/ArenaContext";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, X } from "lucide-react";
@@ -191,6 +191,143 @@ function ConfettiBurst() {
   );
 }
 
+/* ── Helpers ──────────────────────────────────────────── */
+function parseDurationSeconds(str: string): number | null {
+  if (!str) return null;
+  const m = str.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|hr|hrs|hour|hours|sec|secs|second|seconds)/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const u = m[2].toLowerCase();
+  if (u.startsWith('h')) return Math.round(n * 3600);
+  if (u.startsWith('m')) return Math.round(n * 60);
+  return Math.round(n);
+}
+
+function formatTime(secs: number): string {
+  const abs = Math.abs(secs);
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  const s = abs % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/* ── Concluded badge ───────────────────────────────────── */
+function ConcludedBadge() {
+  return (
+    <motion.div
+      className="mt-4 flex items-center gap-2.5 px-4 py-1.5 rounded-full border"
+      style={{ borderColor: `${GOLD}40`, background: `${GOLD}12` }}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 200, damping: 18 }}
+    >
+      <span className="text-sm">🏆</span>
+      <span className="text-xs font-bold uppercase tracking-[0.25em]" style={{ color: GOLD }}>
+        Event Completed
+      </span>
+    </motion.div>
+  );
+}
+
+/* ── Countdown timer display ───────────────────────────── */
+function EventCountdown({ secsLeft, totalSecs }: { secsLeft: number; totalSecs: number }) {
+  const isOvertime = secsLeft <= 0;
+  const pct = Math.max(0, secsLeft / totalSecs);
+  const isWarning = pct < 0.25;
+  const color = isOvertime ? "hsl(43 93% 62%)" : isWarning ? "hsl(0 84% 65%)" : GOLD;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.4 }}
+      className="mt-5 flex flex-col items-center gap-1"
+    >
+      <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
+        {isOvertime ? "Overtime" : "Time Remaining"}
+      </p>
+      <motion.p
+        className="font-carnival tabular-nums"
+        style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", color, textShadow: `0 0 20px ${color}80`, lineHeight: 1 }}
+        animate={isOvertime ? { opacity: [1, 0.55, 1] } : {}}
+        transition={isOvertime ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" } : {}}
+      >
+        {isOvertime ? "OVERTIME" : formatTime(secsLeft)}
+      </motion.p>
+      {!isOvertime && (
+        <div className="mt-1 h-0.5 w-36 rounded-full overflow-hidden" style={{ background: `${GOLD}1A` }}>
+          <div
+            className="h-full rounded-full transition-all duration-1000"
+            style={{ background: color, width: `${pct * 100}%` }}
+          />
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ── Winner podium (shown on stage after event concludes) ─ */
+const PODIUM_COLORS = [GOLD, "hsl(220 15% 80%)", "hsl(25 80% 62%)"];
+
+function WinnerPodium({ event }: { event: ArenaEvent }) {
+  const results = (event.results ?? []).slice(0, 5);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4, duration: 0.5 }}
+      className="relative z-10 mx-auto w-full max-w-4xl px-8 pb-2"
+    >
+      <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground text-center">
+        Official Results
+      </p>
+      <div className="space-y-2">
+        {results.map((r, i) => {
+          const isTop3 = i < 3;
+          const color = PODIUM_COLORS[i] ?? "hsl(220 15% 50%)";
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 + i * 0.06, type: "spring", stiffness: 240, damping: 22 }}
+              className="flex items-center gap-4 rounded-xl px-5 py-3"
+              style={{
+                background: isTop3
+                  ? `linear-gradient(135deg, ${color}18 0%, hsl(248 32% 8%) 100%)`
+                  : "hsl(248 32% 7%)",
+                border: `1px solid ${isTop3 ? color + "35" : "hsl(248 32% 12%)"}`,
+              }}
+            >
+              <span className="text-2xl w-8 text-center shrink-0 leading-none">{MEDALS[i] ?? `#${i + 1}`}</span>
+              {r.teamLogo && <span className="text-xl shrink-0">{r.teamLogo}</span>}
+              <span
+                className="flex-1 font-carnival tracking-wide"
+                style={{ fontSize: "clamp(0.95rem, 2.2vw, 1.3rem)", color: isTop3 ? color : "hsl(220 15% 50%)" }}
+              >
+                {r.teamName ?? "—"}
+              </span>
+              {r.pts > 0 && (
+                <span className="font-carnival tabular-nums text-sm font-bold" style={{ color: isTop3 ? color : "hsl(220 15% 45%)" }}>
+                  +{r.pts} pts
+                </span>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+        className="mt-3 text-center text-[10px] text-muted-foreground"
+      >
+        Season standings have been updated
+      </motion.p>
+    </motion.div>
+  );
+}
+
 /* ── Rules slide-up sheet ─────────────────────────────── */
 function RulesSheet({ rules, title, onClose }: { rules: string[]; title: string; onClose: () => void }) {
   const filled = rules.filter(r => r.trim());
@@ -249,6 +386,32 @@ export function StageView() {
   const liveEvent = events.find(e => e.status === 'live')
     ?? events.find(e => !e.isPast && !e.hidden)
     ?? null;
+
+  // Most recently concluded event — shown as concluded screen when no live event
+  const lastCompletedEvent = useMemo(() => {
+    const completed = events.filter(e => e.status === 'completed');
+    if (completed.length === 0) return null;
+    return completed.reduce((a, b) => {
+      const aTime = a.completedAt ?? new Date(a.date).getTime();
+      const bTime = b.completedAt ?? new Date(b.date).getTime();
+      return aTime > bTime ? a : b;
+    });
+  }, [events]);
+
+  // Live countdown timer — only active when liveEvent has a parseable duration and started
+  const totalSecs = liveEvent ? parseDurationSeconds(liveEvent.duration) : null;
+  const [secsLeft, setSecsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (!liveEvent?.startedAt || !totalSecs) { setSecsLeft(null); return; }
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - liveEvent.startedAt!) / 1000);
+      setSecsLeft(totalSecs - elapsed);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [liveEvent?.startedAt, liveEvent?.id, totalSecs]);
+
   const dividerControls = useAnimation();
   const [rulesOpen, setRulesOpen] = useState(false);
   const leader = sorted[0];
@@ -260,11 +423,6 @@ export function StageView() {
 
   return (
     <div className="min-h-screen bg-[hsl(248_32%_4%)] flex flex-col overflow-hidden relative">
-
-      {/* Announcement ticker — pinned at top, above all layers */}
-      <div className="relative z-30">
-        <AnnouncementTicker />
-      </div>
 
       {/* Scanline texture */}
       <div
@@ -303,16 +461,31 @@ export function StageView() {
 
       {/* Hero */}
       <div className="relative z-10 flex flex-col items-center justify-center pt-14 pb-8 px-8 text-center">
-        {liveEvent && (
+        {/* Emoji — shown for live and concluded events */}
+        {(liveEvent ?? lastCompletedEvent) && (
           <motion.span
+            key={(liveEvent ?? lastCompletedEvent)!.id}
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: [1, 1.12, 1], opacity: 1 }}
             transition={{ type: "spring", stiffness: 180, damping: 14, opacity: { duration: 0.3 } }}
             className="text-7xl mb-5 block"
             style={{ filter: "drop-shadow(0 0 30px hsl(43 93% 60% / 0.6))" }}
           >
-            {liveEvent.emoji}
+            {(liveEvent ?? lastCompletedEvent)!.emoji}
           </motion.span>
+        )}
+
+        {/* "Event Concluded" subheader — only when showing concluded state */}
+        {!liveEvent && lastCompletedEvent && (
+          <motion.p
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.4 }}
+            className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em]"
+            style={{ color: `${GOLD}99` }}
+          >
+            Event Concluded
+          </motion.p>
         )}
 
         <motion.h1
@@ -327,14 +500,14 @@ export function StageView() {
             textShadow: "0 0 30px hsl(43 93% 55% / 0.7), 0 0 60px hsl(38 92% 45% / 0.35), 0 1px 3px hsl(248 32% 3% / 0.9)",
           }}
         >
-          {liveEvent?.title ?? "TFT Arena — Season 2"}
+          {(liveEvent ?? lastCompletedEvent)?.title ?? "TFT Arena — Season 2"}
         </motion.h1>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
-          <LiveBadge />
+          {!liveEvent && lastCompletedEvent ? <ConcludedBadge /> : <LiveBadge />}
         </motion.div>
 
-        {/* Category / format chips */}
+        {/* Category / format chips — live events only */}
         {liveEvent && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -352,7 +525,17 @@ export function StageView() {
             {liveEvent.format   && <span className="text-[11px] text-muted-foreground">· {liveEvent.format}</span>}
           </motion.div>
         )}
+
+        {/* Countdown timer — live events with parseable duration + startedAt */}
+        {liveEvent && secsLeft !== null && totalSecs !== null && (
+          <EventCountdown secsLeft={secsLeft} totalSecs={totalSecs} />
+        )}
       </div>
+
+      {/* Winner podium — shown after event concludes, above the leaderboard */}
+      {!liveEvent && lastCompletedEvent && (lastCompletedEvent.results?.length ?? 0) > 0 && (
+        <WinnerPodium event={lastCompletedEvent} />
+      )}
 
       {/* Gold divider — expands from centre */}
       <div className="relative z-10 mx-auto w-full max-w-4xl px-8">
@@ -523,7 +706,6 @@ export function StageView() {
           </span>
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/20" />
         </motion.div>
-        <AnnouncementTicker />
       </div>
 
       {/* Rules toggle — fixed bottom-right corner */}

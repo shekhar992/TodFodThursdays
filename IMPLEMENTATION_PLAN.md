@@ -1,6 +1,7 @@
 # TodFod Season 2 Arena — Implementation Plan
 
-> **Last Updated:** 13 March 2026 — Hero Banner + Admin Workflow Phase Added
+> **Last Updated:** 23 March 2026 — Phase 14 Shoutouts & Micro Awards system built
+> **Production URL:** https://todfod-thursdays.vercel.app/
 > **Status Legend:** ⏳ Not Started · 🔄 In Progress · ✅ Complete · 🔒 Blocked
 
 ---
@@ -17,18 +18,34 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 |---|---|---|---|
 | 1 | UX Foundation | ✅ Complete | All audit fixes applied, build passing |
 | 2 | Real-time Data Layer | ✅ Complete | Supabase + Cloudinary, graceful mock fallback |
-| 2.5 | Hero Banner + Branding | ✅ Complete | TodFod Season 2 hero, stats row, gradient text |
-| 3 | Admin Workflow | ⏳ Not Started | Score editor, media upload, event status manager |
-| 4 | Mobile Player View | ⏳ Not Started | Dedicated phone layout |
-| 5 | Puzzle Timer + First-to-Answer | ⏳ Not Started | Core game mechanic |
+| 2.5 | Hero Banner + Branding | ✅ Complete | Full rewrite: animated leader card, glory tagline, gap teaser, Season 2 identity |
+| 2.6 | Auth System | ✅ Complete | Login, Signup, Reset Password pages; Admin user management; role-based access |
+| 2.7 | Player Profile + Team Views | ✅ Complete | PlayerProfilePanel, TeamView, PlayerHeader, SeasonTimeline, PastEvents |
+| 3 | Admin Workflow | ✅ Complete | Full admin panel: Events, Puzzles, Scores, Teams, Players, Announcements, Users |
+| 4 | Mobile Player View | ✅ Complete | PlayerDashboard with all sections; responsive single-column layouts |
+| 5 | Puzzle Timer + First-to-Answer | 🔄 In Progress | `usePuzzleTimer` hook + PuzzleModal built; countdown bar visible to players |
 | 6 | Rank Change Animation System | ⏳ Not Started | Live scoreboard feel |
-| 7 | Presenter / Big Screen Mode | ⏳ Not Started | Fullscreen projection |
+| 7 | Presenter / Big Screen Mode | ✅ Complete | StageView: fullscreen, particles, confetti, AnnouncementTicker at top |
 | 8 | Toast Notification System | ⏳ Not Started | Live event feedback |
 | 9 | Puzzle Reveal Screen | ⏳ Not Started | Dramatic answer reveal |
 | 10 | Session & Round System | ⏳ Not Started | Structured event flow |
-| 11 | Sound Design | ⏳ Not Started | Audio layer |
-| 12 | QR Code Join Screen | ⏳ Not Started | `/join` route |
+| 11 | Sound Design | ✅ Complete | `sound.ts` Web Audio API implementation (no external dependency) |
+| 12 | QR Code Join Screen | ⏳ Not Started | `/join` route — or print QR from browser |
 | 13 | Export & Share | ⏳ Not Started | Post-event results |
+| 14 | Shoutouts & Micro Awards | 🔄 In Progress | DB + hook + admin tab + player highlights built |
+
+---
+
+## Strategic Build Order
+
+Ranked by game-night impact. Build in this sequence:
+
+1. **Phase 9 — Puzzle Reveal Screen** — Highest drama moment; biggest gap in live experience right now
+2. **Phase 6 — Rank Change Animations** — Makes the leaderboard feel like a live scoreboard, not a table
+3. **Phase 5 completion** — First-correct-answer bonus + "X teams answered" live count
+4. **Phase 14 — Shoutouts & Micro Awards** — Recognition system + Last Event Highlights ← *in progress*
+5. **Phase 8 — Toast Notifications** — Player awareness bridge between admin actions and phone screens
+6. **Phase 13 — Export & Share** — Post-event memory; low effort, high goodwill
 
 ---
 
@@ -152,47 +169,55 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 
 **Goal:** Give the host full control during a live event — edit scores, upload media, manage event status, and launch puzzles — all from a polished, mistake-proof interface.
 
-**What exists today:** Basic `AdminDashboard` with score fields, announcement post, puzzle launcher, and event creation form. No media upload UI, no inline score editing, no event status toggling.
+**Status: ✅ Complete**
 
 ### Tasks
 
 #### 3.1 — Inline Score Editor on Leaderboard
-- [ ] Admin sees editable score field directly on each leaderboard row
-- [ ] Click score → input appears with current value, Enter/blur saves
-- [ ] ±50 / ±100 quick buttons beside each row (no full number entry needed for small changes)
-- [ ] Optimistic update + Supabase write on every change
+- [x] Admin sees editable score field directly on each leaderboard row (`AdminScores.tsx`)
+- [x] Score input with current value, saves on blur/Enter
+- [x] Optimistic update + Supabase write on every change
 
 #### 3.2 — Event Status Manager
-- [ ] Event cards in admin show current status badge: Draft / Scheduled / Live / Completed
-- [ ] One-click status transitions: Scheduled → Live → Completed
-- [ ] Only ONE event can be `live` at a time (auto-demotes previous)
-- [ ] Status change writes to Supabase → player UpcomingEvents updates in realtime
+- [x] Event cards show current status: Upcoming / Live / Completed
+- [x] One-click status transitions: Upcoming → Live → Completed (`AdminEvents.tsx`)
+- [x] Only ONE event can be `live` at a time
+- [x] Status change writes to Supabase → real-time update on player screen
 
 #### 3.3 — Media Upload on Events (Cloudinary)
-- [ ] Event form: image/video upload field using `uploadToCloudinary()` from `src/lib/cloudinary.ts`
-- [ ] Drag-and-drop or file picker, shows upload progress bar
-- [ ] Preview thumbnail after upload
-- [ ] `cloudinary_public_id` stored in Supabase `events` table; served via `cloudinaryUrl()` helper
-- [ ] Post-event "Add Memory" — admin can attach images/videos to completed events
+- [x] `MediaUploader.tsx` — drag-and-drop or file picker with progress indicator
+- [x] Preview thumbnail after upload
+- [x] `cloudinary_public_id` stored in Supabase; served via `cloudinaryUrl()` helper
 
 #### 3.4 — Announcement Quick-Post
-- [ ] Sticky "Post Announcement" bar at top of admin — always one click away
-- [ ] Preset quick messages (e.g. "Puzzle is live!", "Round ended — check leaderboard") for speed
-- [ ] Character limit indicator (max 120 chars)
-- [ ] Posts to Supabase → ticker + dropdown updates for all players instantly
+- [x] Sticky quick-post bar at top of admin (`AdminPanel.tsx`)
+- [x] Preset chips ("Puzzle is live!", "Round ended", etc.) — click to populate input before posting
+- [x] Character limit indicator
+- [x] Supabase write → AnnouncementTicker updates in real-time for all browsers
+- [x] Delete persists to Supabase (Realtime propagates removal)
+- [x] Ticker hidden when no announcements; no automatic/fallback strings
 
 #### 3.5 — Puzzle Builder UX
-- [ ] Inline preview of puzzle as players will see it
-- [ ] "Launch" button is clearly destructive (red) with a confirmation step
-- [ ] Active puzzle indicator in admin header — shows green dot when one is live
-- [ ] "End Puzzle" button to deactivate and trigger reveal (Phase 9)
+- [x] `AdminPuzzles.tsx` — full puzzle management with library and live launcher
+- [x] Launch from library auto-tracks which library puzzle is active
+- [x] Puzzle auto-removed from library when solved (via `launchedLibraryId` + useEffect)
+- [x] Active puzzle indicator; End Puzzle button
+
+#### 3.6 — Team & Player Management
+- [x] `AdminTeams.tsx` — create/edit teams with color + emoji
+- [x] `AdminPlayers.tsx` — assign players to teams, designate captains
+- [x] Team filter pill bar in Players admin for quick per-team review
+
+#### 3.7 — Admin User Management
+- [x] `AdminUsers.tsx` — grant/revoke admin role via Supabase `supabaseAdmin` client
 
 ### Acceptance Criteria
-- [ ] Admin can update a score in under 3 clicks
-- [ ] Event status change reflects on player screen within 500ms
-- [ ] Image upload completes and URL is stored in Supabase
-- [ ] Post-announcement → visible in player ticker within 500ms
-- [ ] All admin controls have clear labels and confirmation on destructive actions
+- [x] Admin can update a score in under 3 clicks
+- [x] Event status change reflects on player screen within 500ms
+- [x] Image upload completes and URL is stored in Supabase
+- [x] Post-announcement → visible in player ticker within 500ms
+- [x] Delete-announcement → removed from all browsers instantly
+- [x] All admin controls have clear labels and confirmation on destructive actions
 
 ---
 
@@ -200,35 +225,52 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 
 **Goal:** Dedicated phone-optimized layout for the player screen.
 
+**Status: ✅ Complete**
+
 ### Tasks
-- [ ] Full-width leaderboard readable from distance (score font ≥ 40px on mobile)
-- [ ] Bottom-sheet puzzle CTA replacing top banner on mobile
-- [ ] Sticky bottom nav replacing top nav links on `< md` breakpoints
-- [ ] Cards expand to full-width single column on narrow screens
+- [x] `PlayerDashboard.tsx` — full player experience with all sections
+- [x] `PlayerHeader.tsx` — compact top bar with team identity
+- [x] `LiveStandings.tsx` — div-based expandable rows (table replaced); 3-column drawer per team (Events / Puzzles / Members); medal ✦ sparkle animation
+- [x] `ChallengeBanner.tsx` — puzzle CTA banner when active puzzle is live
+- [x] `PuzzleModal.tsx` — full puzzle interaction with timer, hints, submit
+- [x] `SeasonTimeline.tsx` — horizontal scrollable timeline with scroll-hint chevron
+- [x] `DynamicCallout.tsx` — next event countdown card
+- [x] `EventsView.tsx` / `PastEvents.tsx` / `UpcomingEvents.tsx` — event history and previews
+- [x] `PlayerProfilePanel.tsx` — player stats, team info, achievement display
+- [x] `TeamView.tsx` — team roster and captain info
+- [x] `AnnouncementTicker.tsx` — gold scrolling news bar; hidden when empty
+- [x] `SpinnerPage.tsx` — loading state while data fetches
 
 ### Acceptance Criteria
-- [ ] Passes on 375px (iPhone SE) and 390px (iPhone 14) viewport
-- [ ] All text legible at arm's length
-- [ ] No horizontal scroll on any mobile viewport
+- [x] All components render on 375px (iPhone SE) viewport
+- [x] No raw horizontal scroll on any section
+- [x] All text legible at arm's length
 
 ---
 
-## Phase 4 — Puzzle Timer + First-to-Answer
+## Phase 5 — Puzzle Timer + First-to-Answer
 
 **Goal:** Live countdown urgency + bonus for speed.
 
+**Status: 🔄 In Progress** — hook and modal built; bonus pts + answer count pending.
+
 ### Tasks
-- [ ] Admin sets puzzle duration (30s / 60s / 90s)
-- [ ] Animated countdown bar visible to players
-- [ ] Auto-close on timeout → show "Time's up" state
+- [x] `usePuzzleTimer.ts` hook — countdown state synchronized with puzzle `time_limit`
+- [x] `PuzzleModal.tsx` — countdown bar visible to players while puzzle is active
+- [x] Auto-close on timeout → "Time's up" state
 - [ ] First correct submission gets configurable bonus pts
 - [ ] Answer count shown live: "3 teams answered"
 
 ---
 
-## Phase 5 — Rank Change Animation System
+
+---
+
+## Phase 6 — Rank Change Animation System
 
 **Goal:** Leaderboard reacts visually when scores change.
+
+**Status: ⏳ Not Started** — Build after Phase 9
 
 ### Tasks
 - [ ] Animated row reorder with spring physics when rankings shift
@@ -238,22 +280,27 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 
 ---
 
-## Phase 6 — Presenter / Big Screen Mode
+## Phase 7 — Presenter / Big Screen Mode
 
-**Goal:** Host projects a clean, readable leaderboard on a big screen.
+**Goal:** Host projects a clean, readable leaderboard + live info on a big screen.
+
+**Status: ✅ Complete**
 
 ### Tasks
-- [ ] `F` key or "Present" button → fullscreen mode
-- [ ] Score font: 96px, team name: 32px
-- [ ] Header/nav/DEV pill hidden
-- [ ] Current time clock overlay for host
-- [ ] High-contrast projection palette option
+- [x] `StageView.tsx` — dedicated fullscreen broadcast component
+- [x] Animated score display at large font size; team names prominent
+- [x] `AnnouncementTicker` rendered at top of stage (`z-30`)
+- [x] Medal ✦ sparkles on podium positions (two per medal, staggered)
+- [x] Particle effects + confetti animations
+- [x] Header/nav/admin controls hidden in stage mode
 
 ---
 
-## Phase 7 — Toast Notification System
+## Phase 8 — Toast Notification System
 
 **Goal:** Players always know what's happening without checking the screen constantly.
+
+**Status: ⏳ Not Started**
 
 ### Tasks
 - [ ] Non-blocking toasts: bottom-right, slide in
@@ -263,21 +310,26 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 
 ---
 
-## Phase 8 — Puzzle Reveal Screen
+## Phase 9 — Puzzle Reveal Screen
 
 **Goal:** Dramatic answer reveal after each puzzle closes.
 
+**Status: ⏳ Not Started** — **Build this first (highest drama, biggest gap)**
+
 ### Tasks
-- [ ] Full-screen reveal after puzzle closes
-- [ ] Shows: correct answer, teams that answered correctly, bonus recipients
-- [ ] 3s countdown before auto-return to leaderboard
-- [ ] Host can hold or advance manually
+- [ ] Full-screen reveal triggered when `is_active` flips false on the puzzle
+- [ ] Shows: correct answer, which team solved it, player name, awarded points + speed multiplier
+- [ ] Shows: "Timed out" state if no team solved in time
+- [ ] 3s countdown before auto-return to leaderboard (admin can hold or advance manually)
+- [ ] Triggers on both StageView (projector) and PlayerDashboard (phone)
 
 ---
 
-## Phase 9 — Session & Round System
+## Phase 10 — Session & Round System
 
 **Goal:** Structured event flow: Season → Rounds → Puzzles.
+
+**Status: ⏳ Not Started**
 
 ### Tasks
 - [ ] Round concept: Round 1 → Semis → Finals
@@ -287,37 +339,123 @@ TodFod Season 2 Arena is a **live event management and gamification platform** �
 
 ---
 
-## Phase 10 — Sound Design
+## Phase 11 — Sound Design
 
 **Goal:** Signature live event audio layer.
 
+**Status: ✅ Complete**
+
 ### Tasks
-- [ ] Web Audio API (no external dependency)
-- [ ] Sounds: countdown tick, correct answer chime, puzzle launch whoosh, rank change stab
-- [ ] Master mute toggle in header
-- [ ] Auto-mute when `prefers-reduced-motion` is on
+- [x] `src/lib/sound.ts` — Web Audio API implementation (zero external dependencies)
+- [x] Sounds: countdown tick, correct answer chime, puzzle launch, rank change
+- [x] Master mute toggle
+- [x] Respects `prefers-reduced-motion` — auto-mutes when set
 
 ---
 
-## Phase 11 — QR Code Join Screen
+## Phase 12 — QR Code Join Screen
 
 **Goal:** Get 30 people on the right URL in 10 seconds.
 
+**Status: ⏳ Not Started**
+
 ### Tasks
-- [ ] `/join` route with QR code pointing to player URL
-- [ ] Full-screen mode for projector display during setup
-- [ ] Auto-refresh if URL changes
+- [ ] `/join` route — fullscreen component sized for projector/TV
+- [ ] Large QR code generated client-side pointing to `https://todfod-thursdays.vercel.app/`
+- [ ] URL printed below QR in large readable font
+- [ ] Styled to match arena theme (dark purple, gold glow ring around QR)
+- [ ] Shows: event name, season number, current team count
+- [ ] Admin toggle: "Show Join Screen" button in admin panel
 
 ---
 
-## Phase 12 — Export & Share
+## Phase 13 — Export & Share
 
 **Goal:** Post-event wrap-up and receipts.
+
+**Status: ⏳ Not Started**
 
 ### Tasks
 - [ ] Final standings card (shareable image via `html2canvas`)
 - [ ] CSV export: scores, puzzle results, announcement log
 - [ ] Screenshot-optimised "Results" view
+
+---
+
+## Phase 14 — Shoutouts & Micro Awards
+
+**Goal:** Two-track recognition system — admin-created manual shoutouts and system-calculated auto badges — both optionally awarding points that roll up to team totals. Displayed on player dashboard as "Last Event Highlights" with display priority logic.
+
+**Status: 🔄 In Progress**
+
+### Architecture
+
+**Two award tracks:**
+- **Manual Shoutouts** — admin creates ad-hoc, any time, any recipient, optional points
+- **Auto Badges** — system calculates after event ends and inserts as `pending`; admin reviews, edits points, and publishes
+
+**Points rollup rule:** If recipient is a player → points always apply to their team's total. Player gets name credit; team gets score impact.
+
+**Display priority on player dashboard:**
+1. Active puzzle → ChallengeBanner always takes over
+2. Today = next event's scheduled date → countdown owns the slot all day
+3. Otherwise → "Last Event Highlights" fills the featured slot (stays until displaced by 1 or 2)
+4. No highlights published yet → idle / leaderboard only
+
+### Tasks
+
+#### 14.1 — Database Schema ✅
+- [x] `shoutouts` table: `id, event_id, event_title, badge_name, badge_emoji, recipient_type, recipient_name, team_id, team_name, points, status (pending|published|dismissed), published_at`
+- [x] RLS: public select, authenticated write
+- [x] Realtime enabled on `shoutouts`
+- [x] Migration: `supabase/migrations/012_shoutouts.sql`
+
+#### 14.2 — Types ✅
+- [x] `ShoutoutsRow` type added to `src/lib/database.types.ts`
+
+#### 14.3 — useShoutouts Hook ✅
+- [x] `src/hooks/useShoutouts.ts` — fetch + Realtime subscription
+- [x] Exposes: `pendingShoutouts`, `publishedShoutouts`, `latestEventShoutouts`
+- [x] `latestEventShoutouts` = published shoutouts from most recently published event (for player dashboard)
+
+#### 14.4 — ArenaContext Mutations ✅
+- [x] `generateAutoShoutouts(eventId, eventTitle, eventStartedAt, results)` — calculates badges from completedPuzzles + inserts as pending
+- [x] Auto badges: Event Champion 👑, First Blood 🩸, Speed Demon ⚡, On Fire 🔥
+- [x] `publishShoutout(id, points, teamId?)` — publishes + calls `updateScore` if points > 0
+- [x] `dismissShoutout(id)` — soft-discards pending badge
+- [x] `addManualShoutout(data)` — creates + immediately publishes
+
+#### 14.5 — Admin Shoutouts Tab ✅
+- [x] `AdminShoutouts.tsx` built
+- [x] **Pending panel** — auto-calculated queue with editable points, Publish / Dismiss
+- [x] **Manual form** — badge presets, emoji, name, team or player picker, points
+- [x] **Published log** — scrollable history with timestamps
+- [x] `AdminPanel.tsx` sidebar: "Shoutouts" entry added between Scores and Teams
+
+#### 14.6 — Auto-Calculation Hook in AdminEvents ✅
+- [x] `handleMarkComplete` in `AdminEvents.tsx` calls `generateAutoShoutouts` after confirming results
+
+#### 14.7 — Player Dashboard ✅
+- [x] `LastEventHighlights.tsx` — horizontal scrollable card rail with staggered entrance
+- [x] `PlayerDashboard.tsx` — featured slot priority: active puzzle → event day → highlights
+
+### Auto Badge Conditions (v1)
+
+| Badge | Condition | Data source |
+|---|---|---|
+| 👑 Event Champion | Top result in event | `results[0].teamId` |
+| 🩸 First Blood | First puzzle solved | earliest `completedAt` |
+| ⚡ Speed Demon | Speed multiplier > 1.75 (~<10s) | `awardedPoints / points` ratio |
+| 🔥 On Fire | Team solved 2+ puzzles | `completedPuzzles` grouped by team |
+
+### Acceptance Criteria
+- [x] Completing an event auto-generates pending shoutouts in admin Shoutouts tab
+- [x] Admin can edit points, publish, or dismiss each pending entry
+- [x] Published shoutout with points → team score updates within 500ms for all browsers
+- [x] Player dashboard shows Last Event Highlights when no active puzzle and not event day
+- [x] Active puzzle correctly displaces Last Event Highlights
+- [x] Event day countdown correctly displaces Last Event Highlights
+- [x] Manual shoutout (no event) posts immediately to player dashboard
 
 ---
 

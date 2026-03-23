@@ -5,7 +5,7 @@ import { useTeams } from "../hooks/useTeams";
 import { useAnnouncements } from "../hooks/useAnnouncements";
 import { useEvents } from "../hooks/useEvents";
 import { useActivePuzzle } from "../hooks/useActivePuzzle";
-import { EVENT_DETAILS, mockPastPuzzles } from "../data/mockData";
+import { EVENT_DETAILS, mockPastPuzzles, mockShoutoutsStore } from "../data/mockData";
 
 // ── Types ────────────────────────────────────────────────────────────────
 export interface Team {
@@ -37,6 +37,7 @@ export interface ArenaEvent {
   winnerTeamLogo?: string;
   winnerPoints?: number;
   completedAt?: number;
+  startedAt?: number;      // ms timestamp — set when event goes live
   // Event lifecycle
   status?: 'scheduled' | 'live' | 'completed';
   results?: { place: string; pts: number; teamId?: string; teamName?: string; teamLogo?: string }[];
@@ -97,6 +98,11 @@ interface ArenaActions {
   updateScore: (teamId: string, delta: number) => void;
   setStageModeActive: (active: boolean) => void;
   cancelPuzzle: () => void;
+  // Shoutout actions
+  generateAutoShoutouts: (eventId: string, eventTitle: string, eventStartedAt: number | undefined, results: { teamId?: string; teamName?: string; pts: number }[]) => void;
+  publishShoutout: (id: string, points: number, teamId?: string) => void;
+  dismissShoutout: (id: string) => void;
+  addManualShoutout: (data: { badgeName: string; badgeEmoji: string; recipientType: 'player' | 'team'; recipientName: string; teamId?: string; teamName?: string; eventId?: string; eventTitle?: string; points: number }) => void;
 }
 
 const ArenaContext = createContext<(ArenaState & ArenaActions) | null>(null);
@@ -214,6 +220,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         winnerTeamLogo: e.winner_team_logo ?? (resolvedIsPast ? d?.winnerLogo : undefined),
         winnerPoints: e.winner_points ?? (resolvedIsPast ? (d?.pointsBreakdown?.[0]?.pts) : undefined),
         completedAt: resolvedIsPast ? (e.completed_at ? new Date(e.completed_at).getTime() : new Date(e.date).getTime()) : undefined,
+        startedAt: e.started_at ? new Date(e.started_at).getTime() : undefined,
         results: dbResults,
         memories,
       };
@@ -354,6 +361,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
         image_url: event.image || null, cloudinary_public_id: null, participants: null,
         results: [], media_urls: [],
         winner_team_id: null, winner_team_name: null, winner_team_logo: null, winner_points: null,
+        started_at: null, completed_at: null,
         data: {
           emoji: event.emoji,
           format: event.format,
@@ -368,7 +376,11 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   const updateEvent = useCallback((id: string, updates: Partial<Omit<ArenaEvent, "id">>) => {
     setEvents(prev => prev.map(e => {
       if (e.id !== id) return e;
-      const merged = { ...e, ...updates };
+      const localUpdates: Partial<Omit<ArenaEvent, 'id'>> =
+        updates.status === 'live' && !e.startedAt
+          ? { ...updates, startedAt: Date.now() }
+          : updates;
+      const merged = { ...e, ...localUpdates };
       // Keep memories in sync if image changes
       if ('image' in updates && merged.isPast) {
         const imgs = [merged.image, ...(merged.memories ?? []).slice(1)].filter(Boolean) as string[];
@@ -386,6 +398,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       if ('image'       in updates) dbUpdate.image_url = updates.image ?? null;
       if ('status'      in updates) {
         dbUpdate.status = updates.status === 'scheduled' ? 'upcoming' : (updates.status ?? 'upcoming');
+        if (updates.status === 'live') dbUpdate.started_at = new Date().toISOString();
       }
       if ('isPast' in updates) {
         // isPast=true without explicit status → completed
@@ -397,6 +410,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
       if ('winnerTeamLogo' in updates) dbUpdate.winner_team_logo = updates.winnerTeamLogo ?? null;
       if ('winnerPoints'   in updates) dbUpdate.winner_points    = updates.winnerPoints   ?? null;
       if ('results'        in updates) dbUpdate.results   = updates.results   ?? [];
+      if ('completedAt'    in updates && updates.completedAt) dbUpdate.completed_at = new Date(updates.completedAt).toISOString();
       // Persist rich detail fields into the data jsonb column.
       // handleSave always passes ALL fields, so use updates directly.
       // Partial-update callers (status, winner, etc.) never include these keys → skipped.
@@ -548,7 +562,7 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
   const updateScore = useCallback((teamId: string, delta: number) => {
     setTeams(prev => {
       const updated = prev.map(t => t.id === teamId ? { ...t, score: t.score + delta } : t);
-      if (isSupabaseConfigured) {
+      if (isSupabaseConfigured && !isMockMode) {
         const team = updated.find(t => t.id === teamId);
         if (team) {
           console.log('[Arena] updateScore →', team.name, 'delta:', delta, 'newScore:', team.score);
@@ -613,11 +627,160 @@ export function ArenaProvider({ children }: { children: ReactNode }) {
     setPuzzleSolved(true);
   }, [solvedTeams, updateScore]);
 
+  // ── Shoutout actions ──────────────────────────────────────────────────────
+
+  const generateAutoShoutouts = useCallback((
+    eventId: string,
+    eventTitle: string,
+    eventStartedAt: number | undefined,
+    results: { teamId?: string; teamName?: string; pts: number }[]
+  ) => {
+    if (!isSupabaseConfigured || isMockMode) return;
+
+    // Get puzzles completed during this event's window
+    const eventPuzzles = eventStartedAt
+      ? completedPuzzles.filter(p => p.completedAt >= eventStartedAt)
+      : completedPuzzles.slice(0, 10);
+
+    const inserts: any[] = [];
+    const solvedPuzzles = eventPuzzles.filter(p => !p.timedOut && p.solvedByTeamId);
+
+    // 1. Event Champion — top result by pts
+    const sortedResults = [...results].sort((a, b) => b.pts - a.pts);
+    const winner = sortedResults[0];
+    if (winner?.teamId) {
+      const team = teams.find(t => t.id === winner.teamId);
+      inserts.push({
+        event_id: eventId, event_title: eventTitle,
+        badge_name: 'Event Champion', badge_emoji: '👑',
+        recipient_type: 'team',
+        recipient_name: winner.teamName || team?.name || 'Unknown',
+        team_id: winner.teamId,
+        team_name: winner.teamName || team?.name || null,
+        points: 0, status: 'pending',
+      });
+    }
+
+    // 2. First Blood — first puzzle solved in this event
+    if (solvedPuzzles.length > 0) {
+      const first = [...solvedPuzzles].sort((a, b) => a.completedAt - b.completedAt)[0];
+      inserts.push({
+        event_id: eventId, event_title: eventTitle,
+        badge_name: 'First Blood', badge_emoji: '🩸',
+        recipient_type: first.solvedByPlayer ? 'player' : 'team',
+        recipient_name: first.solvedByPlayer || first.solvedBy || 'Unknown',
+        team_id: first.solvedByTeamId || null,
+        team_name: first.solvedBy || null,
+        points: 0, status: 'pending',
+      });
+    }
+
+    // 3. Speed Demon — multiplier > 1.75 means solved in < ~10s
+    const speedPuzzles = solvedPuzzles.filter(
+      p => p.awardedPoints && p.points > 0 && (p.awardedPoints / p.points) > 1.75
+    );
+    if (speedPuzzles.length > 0) {
+      const fastest = speedPuzzles.sort(
+        (a, b) => (b.awardedPoints! / b.points) - (a.awardedPoints! / a.points)
+      )[0];
+      const elapsedSec = Math.round((2 - fastest.awardedPoints! / fastest.points) / 1.5 * 60);
+      inserts.push({
+        event_id: eventId, event_title: eventTitle,
+        badge_name: `Speed Demon · ${elapsedSec}s`, badge_emoji: '⚡',
+        recipient_type: fastest.solvedByPlayer ? 'player' : 'team',
+        recipient_name: fastest.solvedByPlayer || fastest.solvedBy || 'Unknown',
+        team_id: fastest.solvedByTeamId || null,
+        team_name: fastest.solvedBy || null,
+        points: 0, status: 'pending',
+      });
+    }
+
+    // 4. On Fire — team with 2+ solves
+    const solvesByTeam: Record<string, { count: number; name: string }> = {};
+    solvedPuzzles.forEach(p => {
+      if (!p.solvedByTeamId) return;
+      if (!solvesByTeam[p.solvedByTeamId]) solvesByTeam[p.solvedByTeamId] = { count: 0, name: p.solvedBy || '' };
+      solvesByTeam[p.solvedByTeamId].count++;
+    });
+    const topEntry = Object.entries(solvesByTeam).sort((a, b) => b[1].count - a[1].count)[0];
+    if (topEntry && topEntry[1].count >= 2) {
+      inserts.push({
+        event_id: eventId, event_title: eventTitle,
+        badge_name: `On Fire · ${topEntry[1].count} solves`, badge_emoji: '🔥',
+        recipient_type: 'team',
+        recipient_name: topEntry[1].name || 'Unknown',
+        team_id: topEntry[0],
+        team_name: topEntry[1].name || null,
+        points: 0, status: 'pending',
+      });
+    }
+
+    if (inserts.length === 0) return;
+    supabase.from('shoutouts').insert(inserts)
+      .then(({ error }) => { if (error) console.error('[Supabase] generateAutoShoutouts:', error.message); });
+  }, [completedPuzzles, teams]);
+
+  const publishShoutout = useCallback((id: string, points: number, teamId?: string) => {
+    if (isMockMode) {
+      mockShoutoutsStore.update(id, { status: 'published', points, publishedAt: new Date().toISOString() });
+    } else if (isSupabaseConfigured) {
+      supabase.from('shoutouts').update({
+        status: 'published',
+        points,
+        published_at: new Date().toISOString(),
+      }).eq('id', id)
+        .then(({ error }) => { if (error) console.error('[Supabase] publishShoutout:', error.message); });
+    }
+    if (points > 0 && teamId) updateScore(teamId, points);
+  }, [updateScore]);
+
+  const dismissShoutout = useCallback((id: string) => {
+    if (isMockMode) {
+      mockShoutoutsStore.update(id, { status: 'dismissed' });
+    } else if (isSupabaseConfigured) {
+      supabase.from('shoutouts').update({ status: 'dismissed' }).eq('id', id)
+        .then(({ error }) => { if (error) console.error('[Supabase] dismissShoutout:', error.message); });
+    }
+  }, []);
+
+  const addManualShoutout = useCallback((data: {
+    badgeName: string; badgeEmoji: string;
+    recipientType: 'player' | 'team'; recipientName: string;
+    teamId?: string; teamName?: string;
+    eventId?: string; eventTitle?: string; points: number;
+  }) => {
+    if (isMockMode) {
+      const selectedTeam = teams.find(t => t.id === data.teamId);
+      mockShoutoutsStore.add({
+        id: `mock-${Date.now()}`,
+        eventId: data.eventId || null, eventTitle: data.eventTitle || null,
+        badgeName: data.badgeName, badgeEmoji: data.badgeEmoji,
+        recipientType: data.recipientType, recipientName: data.recipientName,
+        teamId: data.teamId || null,
+        teamName: data.teamName || selectedTeam?.name || null,
+        points: data.points, status: 'published',
+        publishedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+    } else if (isSupabaseConfigured) {
+      supabase.from('shoutouts').insert({
+        badge_name: data.badgeName, badge_emoji: data.badgeEmoji,
+        recipient_type: data.recipientType, recipient_name: data.recipientName,
+        team_id: data.teamId || null, team_name: data.teamName || null,
+        event_id: data.eventId || null, event_title: data.eventTitle || null,
+        points: data.points, status: 'published',
+        published_at: new Date().toISOString(),
+      }).then(({ error }) => { if (error) console.error('[Supabase] addManualShoutout:', error.message); });
+    }
+    if (data.points > 0 && data.teamId) updateScore(data.teamId, data.points);
+  }, [updateScore, teams]);
+
   return (
     <ArenaContext.Provider value={{
       teams, events, announcements, activePuzzle, completedPuzzles, puzzleSolved, solvedTeams, stageMode,
       addEvent, updateEvent, deleteEvent, addAnnouncement, deleteAnnouncement, pinAnnouncement,
       launchPuzzle, startPuzzleTimer, stopPuzzleTimer, cancelPuzzle, solvePuzzle, updateScore, setStageModeActive,
+      generateAutoShoutouts, publishShoutout, dismissShoutout, addManualShoutout,
     }}>
       {children}
     </ArenaContext.Provider>

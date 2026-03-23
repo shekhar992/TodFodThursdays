@@ -1,9 +1,11 @@
 import { useArena } from "@/context/ArenaContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, ChevronDown, ChevronUp, Calendar, Zap, Users } from "lucide-react";
+import { Trophy, ChevronDown, ChevronUp, Calendar, Zap, Users, Star } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isMockMode } from "@/lib/mockAuth";
+import { mockPlayers } from "@/data/mockData";
+import { useShoutouts } from "@/hooks/useShoutouts";
 
 function AnimatedScore({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
@@ -29,6 +31,7 @@ function AnimatedScore({ value }: { value: number }) {
 
 export function LiveStandings() {
   const { teams, events, completedPuzzles } = useArena();
+  const { publishedShoutouts } = useShoutouts();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [membersCache, setMembersCache] = useState<Record<string, string[] | null>>({});
 
@@ -38,7 +41,12 @@ export function LiveStandings() {
     if (teamId in membersCache) return;
     // Mark as loading
     setMembersCache(c => ({ ...c, [teamId]: null }));
-    if (!isSupabaseConfigured || isMockMode) {
+    if (isMockMode) {
+      const names = mockPlayers.filter(p => p.team_id === teamId).map(p => p.display_name);
+      setMembersCache(c => ({ ...c, [teamId]: names }));
+      return;
+    }
+    if (!isSupabaseConfigured) {
       setMembersCache(c => ({ ...c, [teamId]: [] }));
       return;
     }
@@ -108,6 +116,12 @@ export function LiveStandings() {
             !p.timedOut && (p.solvedByTeamId === team.id || p.solvedBy === team.name)
           );
 
+          // Shoutouts for this team (team-recipient or player-recipient under this team)
+          const teamShoutouts = publishedShoutouts.filter(s => s.teamId === team.id);
+          const shoutoutPts = teamShoutouts.reduce((sum, s) => sum + s.points, 0);
+          const shoutoutBadges = teamShoutouts.slice(0, 4);
+          const shoutoutOverflow = Math.max(0, teamShoutouts.length - 4);
+
           const members = membersCache[team.id] ?? null;
           const membersLoaded = team.id in membersCache;
 
@@ -169,7 +183,7 @@ export function LiveStandings() {
                     className="overflow-hidden"
                   >
                     <div
-                      className="border-t border-border/20 px-4 py-4 grid gap-5 sm:grid-cols-3"
+                      className="border-t border-border/20 px-4 py-4 grid gap-5 sm:grid-cols-2 md:grid-cols-4"
                       style={{ background: "hsl(248 32% 7% / 0.5)" }}
                     >
                       {/* ① Events */}
@@ -181,13 +195,22 @@ export function LiveStandings() {
                           <div className="space-y-1.5">
                             {teamEventPlacements.map(({ event: ev, result }) => {
                               const p = result.place ?? "";
-                              const badge = p.includes("1") || p.includes("🥇") ? "🥇"
+                              const isMedal = p.includes("1") || p.includes("🥇") ||
+                                             p.includes("2") || p.includes("🥈") ||
+                                             p.includes("3") || p.includes("🥉");
+                              const medal = p.includes("1") || p.includes("🥇") ? "🥇"
                                 : p.includes("2") || p.includes("🥈") ? "🥈"
                                 : p.includes("3") || p.includes("🥉") ? "🥉"
-                                : p || "–";
+                                : null;
                               return (
                                 <div key={ev.id} className="flex items-center gap-1.5">
-                                  <span className="text-sm leading-none shrink-0">{badge}</span>
+                                  {medal ? (
+                                    <span className="text-sm leading-none shrink-0">{medal}</span>
+                                  ) : (
+                                    <span className="shrink-0 inline-flex items-center justify-center rounded px-1 py-0.5 text-[9px] font-bold tabular-nums leading-none bg-secondary/80 text-muted-foreground border border-border/50 min-w-[22px]">
+                                      {p || "–"}
+                                    </span>
+                                  )}
                                   <span className="text-xs text-foreground/80 flex-1 truncate">{ev.title}</span>
                                   <span className="text-[10px] text-gold font-bold tabular-nums shrink-0">+{result.pts}</span>
                                 </div>
@@ -222,7 +245,35 @@ export function LiveStandings() {
                         )}
                       </div>
 
-                      {/* ③ Members */}
+                      {/* ③ Recognition */}
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
+                          <Star className="h-2.5 w-2.5" /> Recognition
+                        </p>
+                        {teamShoutouts.length > 0 ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-sm font-bold text-foreground tabular-nums">{teamShoutouts.length}</span>
+                              <span className="text-[10px] text-muted-foreground">shoutout{teamShoutouts.length !== 1 ? 's' : ''}</span>
+                              {shoutoutPts > 0 && (
+                                <span className="ml-auto text-[10px] font-bold text-gold tabular-nums">+{shoutoutPts} pts</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-0.5">
+                              {shoutoutBadges.map(s => (
+                                <span key={s.id} title={s.badgeName} className="text-sm leading-none">{s.badgeEmoji}</span>
+                              ))}
+                              {shoutoutOverflow > 0 && (
+                                <span className="text-[9px] text-muted-foreground self-center ml-0.5">+{shoutoutOverflow}</span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-muted-foreground/40 italic">None yet</p>
+                        )}
+                      </div>
+
+                      {/* ④ Members */}
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
                           <Users className="h-2.5 w-2.5" /> Members

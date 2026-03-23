@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { isMockMode } from "@/lib/mockAuth";
+import { mockTeams, mockPlayers } from "@/data/mockData";
 
 interface Team {
   id: string;
@@ -28,16 +29,11 @@ export function SpinnerPage() {
   // ── Load teams with member counts ──────────────────────────────────────
   useEffect(() => {
     async function load() {
-      if (!isSupabaseConfigured) {
-        // mock fallback
-        setTeams([
-          { id: '1', name: 'Team Titans',    color: '#00E5FF', logo: '⚡', memberCount: 0 },
-          { id: '2', name: 'Team Phoenix',   color: '#FF2E88', logo: '🔥', memberCount: 0 },
-          { id: '3', name: 'Team Mavericks', color: '#7A5CFF', logo: '🦅', memberCount: 0 },
-          { id: '4', name: 'Team Warriors',  color: '#00FFC6', logo: '⚔️', memberCount: 0 },
-          { id: '5', name: 'Team Vortex',    color: '#FFE600', logo: '🌀', memberCount: 0 },
-          { id: '6', name: 'Team Nexus',     color: '#FF6B35', logo: '🔗', memberCount: 0 },
-        ]);
+      if (isMockMode || !isSupabaseConfigured) {
+        // mock fallback — use canonical mockTeams with member counts from mockPlayers
+        const countMap: Record<string, number> = {};
+        mockPlayers.forEach(p => { countMap[p.team_id] = (countMap[p.team_id] ?? 0) + 1; });
+        setTeams(mockTeams.map(t => ({ ...t, memberCount: countMap[t.id] ?? 0 })));
         setLoadingTeams(false);
         return;
       }

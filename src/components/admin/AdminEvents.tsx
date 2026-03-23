@@ -88,7 +88,28 @@ function EventForm({ initial, onSave, onCancel }: { initial: FormData; onSave: (
           </div>
           <div>
             <label className={labelCls}>Duration</label>
-            <input value={f.duration} onChange={e => set("duration", e.target.value)} className={inputCls} placeholder="e.g. 90 min" />
+            <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
+              {['30 min', '45 min', '60 min', '90 min', '120 min'].map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => set('duration', opt)}
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-bold border transition-colors ${
+                    f.duration === opt
+                      ? 'bg-gold/20 text-gold border-gold/40'
+                      : 'text-muted-foreground border-border/50 hover:text-gold hover:border-gold/30 hover:bg-gold/8'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <input
+              value={f.duration}
+              onChange={e => set('duration', e.target.value)}
+              className={inputCls}
+              placeholder="Custom (e.g. 75 min, 2 hrs)"
+            />
           </div>
         </div>
         <div>
@@ -525,7 +546,7 @@ function EventCard({ event, teams, onEdit, onDelete, onToggleHidden, onGoLive, o
 }
 
 export function AdminEvents() {
-  const { events, teams, addEvent, updateEvent, deleteEvent, updateScore } = useArena();
+  const { events, teams, addEvent, updateEvent, deleteEvent, updateScore, generateAutoShoutouts } = useArena();
   const [editTarget, setEditTarget] = useState<ArenaEvent | "new" | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm());
   const [showPast, setShowPast] = useState(false);
@@ -554,11 +575,19 @@ export function AdminEvents() {
     // Apply points — each team gets exactly the pts entered
     results.forEach(r => { if (r.teamId && r.pts > 0) updateScore(r.teamId, r.pts); });
     const first = results[0]; // already sorted by pts desc in confirmResults
+    const eventBeingCompleted = events.find(e => e.id === eventId);
     updateEvent(eventId, {
       isPast: true, status: 'completed', completedAt: Date.now(), results,
       winnerTeamId: first.teamId, winnerTeamName: first.teamName,
       winnerTeamLogo: first.teamLogo, winnerPoints: first.pts,
     });
+    // Trigger auto-badge generation for this event
+    generateAutoShoutouts(
+      eventId,
+      eventBeingCompleted?.title || 'Event',
+      eventBeingCompleted?.startedAt,
+      results.map(r => ({ teamId: r.teamId, teamName: r.teamName, pts: r.pts }))
+    );
   }
 
   if (editTarget !== null) {
